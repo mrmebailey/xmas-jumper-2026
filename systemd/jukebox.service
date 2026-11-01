@@ -1,0 +1,17 @@
+[Unit]
+Description=Christmas Jukebox touchscreen app
+After=sound.target
+
+[Service]
+Type=simple
+# Adjust User/WorkingDirectory if your Pi login isn't "mark".
+User=mark
+WorkingDirectory=/home/mark/xmas-jumper-2026
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=SDL_FBDEV=/dev/fb0
+ExecStart=/usr/bin/python3 -m jukebox.main
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
