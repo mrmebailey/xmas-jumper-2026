@@ -4,20 +4,14 @@ A touchscreen jukebox for a Raspberry Pi Zero W: pick **Jokes** (shown on screen
 
 ## Hardware assumed
 
-- Raspberry Pi Zero W, Raspberry Pi OS Lite (no desktop needed)
+- Raspberry Pi Zero W, Raspberry Pi OS **Desktop** (not Lite) — the app runs as a fullscreen window on top of the desktop session, autologin to the desktop is expected to already be configured
 - 2.8" capacitive IPS touchscreen, 480x640 native panel, run in landscape (640x480)
 - USB speaker
 - Camera module ("spy cam"), used by the Camera menu option
 
-## TOUCHSCREEN DRIVER — TODO, vendor specific
+## TOUCHSCREEN DRIVER — vendor specific
 
-This was written against a generic "2.8\" capacitive IPS touchscreen" with no specific vendor/driver known. Before this will work on real hardware you'll likely need to:
-
-1. Identify the exact panel (check the product listing / any included driver CD or link).
-2. Install whatever driver/overlay it needs (common patterns: a vendor `apt` package, or `git clone`-ing a driver repo and running its install script, or adding a `dtoverlay=` line to `/boot/config.txt`).
-3. Confirm it shows up as a framebuffer (`/dev/fb0` or similar) and a touch input device (`/dev/input/eventX`, check with `evtest`).
-
-This app assumes standard SDL/Linux input — once the panel enumerates as a normal framebuffer + HID touch device, no app-side driver code should be needed.
+This was written against a generic "2.8\" capacitive IPS touchscreen" with no specific vendor/driver known, but you'll need its driver/overlay installed and working (vendor `apt` package, or a `git clone`d driver repo's install script, or a `dtoverlay=` line in `/boot/config.txt`) so the panel shows the desktop and the display's framebuffer is `/dev/fb0` or `/dev/fb1`. Once the desktop itself renders correctly on the panel (confirmed by seeing the normal Pi desktop there), the app just runs as an ordinary fullscreen X11 window — no raw framebuffer/evdev code needed on our side, X handles the touch input directly.
 
 ## CAMERA — TODO, module specific
 
@@ -32,9 +26,9 @@ cd ~/xmas-jumper-2026
 sudo reboot
 ```
 
-`setup.sh` installs `python3-pygame`, `espeak-ng`, `alsa-utils`, a camera CLI tool (`rpicam-apps`/`libcamera-apps`), adds your user to the `video`/`input`/`audio` groups (needed for framebuffer/touch/camera/sound access without a desktop session), and installs+enables the `jukebox` systemd service so it starts on boot.
+`setup.sh` installs `python3-pygame`, `espeak-ng`, `alsa-utils`, a camera CLI tool (`rpicam-apps`/`libcamera-apps`), adds your user to the `video`/`audio` groups (camera/sound access), and writes `~/.config/autostart/jukebox.desktop` so the desktop session launches `run.sh` on login. It figures out the repo path itself (no hardcoded paths to edit).
 
-If your Pi login isn't `mark`, edit `User=`/`WorkingDirectory=` in `systemd/jukebox.service` before running `setup.sh` (or after, then `sudo systemctl daemon-reload`).
+To launch it immediately without logging out/in: `./run.sh`. Press `Esc` to quit back to the desktop.
 
 ## Running / testing on a dev machine
 
@@ -43,7 +37,7 @@ pip install pygame
 python3 -m jukebox.main
 ```
 
-This runs in an ordinary window (no `SDL_VIDEODRIVER` override, that's only set in the systemd unit), so you can click with a mouse to simulate touch. You'll need `espeak-ng` installed locally too if you want to hear jokes spoken.
+This opens fullscreen on whatever display you're on — click with a mouse to simulate touch, `Esc` to quit. You'll need `espeak-ng` installed locally too if you want to hear jokes spoken.
 
 ## Layout
 
@@ -52,6 +46,6 @@ This runs in an ordinary window (no `SDL_VIDEODRIVER` override, that's only set 
 - `jukebox/audio.py` — music playback + text-to-speech + volume
 - `jukebox/camera.py` — shells out to the camera CLI tool, saves to `photos/`
 - `jukebox/jokes_loader.py`, `jukebox/music_loader.py` — parse `jokes.txt` / scan `music/`
-- `systemd/jukebox.service` — boots straight into the app, no desktop login
+- `run.sh` — launched by the desktop autostart entry `setup.sh` creates; `cd`s to the repo and runs the app
 
 Games are a planned future addition — not implemented yet.

@@ -16,8 +16,9 @@ from .states.music import MusicState
 class App:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((config.SCREEN_W, config.SCREEN_H))
+        self.screen = pygame.display.set_mode((config.SCREEN_W, config.SCREEN_H), pygame.FULLSCREEN)
         pygame.display.set_caption("Christmas Jukebox")
+        pygame.mouse.set_visible(False)
         self.clock = pygame.time.Clock()
 
         self.font_large = pygame.font.Font(None, config.FONT_SIZE_LARGE)
@@ -51,6 +52,8 @@ class App:
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.running = False
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     self.running = False
                 else:
                     self.current_state.handle_event(event)
