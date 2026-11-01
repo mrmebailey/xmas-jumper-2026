@@ -43,7 +43,7 @@ pip install pygame
 python3 -m jukebox.main
 ```
 
-This runs in an ordinary window (no `kmsdrm` override, that's only set in the systemd unit), so you can click with a mouse to simulate touch. You'll need `espeak-ng` installed locally too if you want to hear jokes spoken.
+This runs in an ordinary window (no `SDL_VIDEODRIVER` override, that's only set in the systemd unit), so you can click with a mouse to simulate touch. You'll need `espeak-ng` installed locally too if you want to hear jokes spoken.
 
 ## Layout
 
