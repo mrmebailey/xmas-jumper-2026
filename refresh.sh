@@ -11,7 +11,8 @@ while pgrep -f jukebox.main >/dev/null && [ "$i" -lt 50 ]; do
   sleep 0.1
   i=$((i + 1))
 done
-setsid nohup ./run.sh >"$LOG" 2>&1 </dev/null &
+# Unbuffered so the log fills in as it happens rather than when Python exits.
+PYTHONUNBUFFERED=1 setsid nohup ./run.sh >"$LOG" 2>&1 </dev/null &
 sleep 3
 if pgrep -f jukebox.main >/dev/null; then
   echo "Jukebox restarted (output in $LOG)."
