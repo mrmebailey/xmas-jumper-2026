@@ -30,6 +30,8 @@ sudo reboot
 
 To launch it immediately without logging out/in: `./run.sh`. Press `Esc` to quit back to the desktop.
 
+To pick up new code without a reboot: `./refresh.sh` (pulls, stops the running jukebox and starts it again on the touchscreen; safe to run over SSH).
+
 ## Running / testing on a dev machine
 
 ```sh
@@ -46,6 +48,7 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 - `jukebox/audio.py` — music playback + text-to-speech + volume
 - `jukebox/camera.py` — shells out to the camera CLI tool, saves to `photos/`
 - `jukebox/jokes_loader.py`, `jukebox/music_loader.py` — parse `jokes.txt` / scan `music/`
+- `refresh.sh` — `git pull` and restart the running jukebox without a reboot
 - `run.sh` — launched by the desktop autostart entry `setup.sh` creates; `cd`s to the repo and runs the app
 
 Games are a planned future addition — not implemented yet.
