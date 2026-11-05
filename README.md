@@ -30,7 +30,17 @@ sudo reboot
 
 To launch it immediately without logging out/in: `./run.sh`. Press `Esc` to quit back to the desktop.
 
-To pick up new code without a reboot: `./refresh.sh` (pulls, stops the running jukebox and starts it again on the touchscreen; safe to run over SSH).
+### Running under xinit (no desktop)
+
+The Pi in use boots to a console and starts X with `xinit`, which runs `~/.xinitrc`. Link it to the repo's `xinitrc` once:
+
+```sh
+ln -sf ~/xmas-jumper-2026/xinitrc ~/.xinitrc
+```
+
+It keeps the jukebox in a restart loop (xinit would otherwise shut X down as soon as the jukebox exits), so `Esc` restarts the app rather than quitting it.
+
+To pick up new code without a reboot: `./refresh.sh` (pulls, then stops the running jukebox so the `xinitrc` loop starts the new code; safe to run over SSH).
 
 ## Running / testing on a dev machine
 
@@ -49,6 +59,7 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 - `jukebox/camera.py` — shells out to the camera CLI tool, saves to `photos/`
 - `jukebox/jokes_loader.py`, `jukebox/music_loader.py` — parse `jokes.txt` / scan `music/`
 - `refresh.sh` — `git pull` and restart the running jukebox without a reboot
-- `run.sh` — launched by the desktop autostart entry `setup.sh` creates; `cd`s to the repo and runs the app
+- `xinitrc` — X session for xinit: disables blanking, starts openbox, runs the jukebox in a restart loop
+- `run.sh` — launched by `xinitrc` (or the desktop autostart entry `setup.sh` creates); `cd`s to the repo and runs the app
 
 Games are a planned future addition — not implemented yet.
