@@ -1,4 +1,6 @@
+import os
 import sys
+import time
 
 import pygame
 
@@ -13,9 +15,21 @@ from .states.menu import MenuState
 from .states.music import MusicState
 
 
+# Set JUKEBOX_PROFILE=1 to log input arrival and slow frames to stderr.
+PROFILE = os.environ.get("JUKEBOX_PROFILE") == "1"
+SLOW_FRAME_MS = 100
+_TOUCH_EVENTS = {pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.FINGERDOWN, pygame.FINGERUP}
+
+
+def _log(msg):
+    print(f"[{time.monotonic():10.3f}] {msg}", file=sys.stderr, flush=True)
+
+
 class App:
     def __init__(self):
         pygame.init()
+        if PROFILE:
+            _log(f"SDL video driver: {pygame.display.get_driver()}")
         self.screen = pygame.display.set_mode((config.SCREEN_W, config.SCREEN_H), pygame.FULLSCREEN)
         pygame.display.set_caption("Christmas Jukebox")
         pygame.mouse.set_visible(False)
@@ -41,6 +55,8 @@ class App:
         self.current_state = None
         self.change_state("menu")
         self.running = True
+        if PROFILE:
+            _log(f"display info: {pygame.display.Info()}")
 
     def change_state(self, name):
         if self.current_state is not None:
@@ -50,16 +66,33 @@ class App:
 
     def run(self):
         while self.running:
-            for event in pygame.event.get():
+            t0 = time.monotonic()
+            events = pygame.event.get()
+            t1 = time.monotonic()
+            for event in events:
+                if PROFILE and event.type in _TOUCH_EVENTS:
+                    # SDL timestamps are ms since SDL init; compare against
+                    # pygame.time.get_ticks() to see how long it sat in the queue.
+                    queued = pygame.time.get_ticks() - getattr(event, "timestamp", pygame.time.get_ticks())
+                    _log(f"{pygame.event.event_name(event.type)} {getattr(event, 'pos', '')} queued={queued}ms")
                 if event.type == pygame.QUIT:
                     self.running = False
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     self.running = False
                 else:
                     self.current_state.handle_event(event)
+            t2 = time.monotonic()
             self.current_state.update()
             self.current_state.draw(self.screen)
+            t3 = time.monotonic()
             pygame.display.flip()
+            t4 = time.monotonic()
+            if PROFILE and (t4 - t0) * 1000 > SLOW_FRAME_MS:
+                _log(
+                    f"slow frame {(t4 - t0) * 1000:.0f}ms: get={(t1 - t0) * 1000:.0f} "
+                    f"handle={(t2 - t1) * 1000:.0f} ({len(events)} events) "
+                    f"draw={(t3 - t2) * 1000:.0f} flip={(t4 - t3) * 1000:.0f}"
+                )
             self.clock.tick(config.FPS)
         pygame.quit()
 
