@@ -35,11 +35,12 @@ class CameraState(State):
         self.status = f"Saved {path.name}"
         image = pygame.image.load(str(path))
         w, h = image.get_size()
-        # Scale to cover the screen (the overflow is cropped when centred) using the
-        # turned-round size, but scale before rotating: turning the full-resolution
-        # photo is much slower on the Pi Zero.
+        # Scale to fit (or, with PHOTO_PREVIEW_FILL, to cover and crop) the screen
+        # using the turned-round size, but scale before rotating: turning the
+        # full-resolution photo is much slower on the Pi Zero.
         fit_w, fit_h = (h, w) if config.PHOTO_ROTATION % 180 else (w, h)
-        scale = max(config.SCREEN_W / fit_w, config.SCREEN_H / fit_h)
+        pick = max if config.PHOTO_PREVIEW_FILL else min
+        scale = pick(config.SCREEN_W / fit_w, config.SCREEN_H / fit_h)
         image = pygame.transform.scale(image, (int(w * scale), int(h * scale)))
         self.preview = pygame.transform.rotate(image, config.PHOTO_ROTATION)
         self.preview_until = pygame.time.get_ticks() + config.PHOTO_PREVIEW_MS

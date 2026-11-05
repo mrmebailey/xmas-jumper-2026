@@ -18,7 +18,7 @@ class CameraManager:
         path = config.PHOTOS_DIR / filename
         try:
             subprocess.run(
-                [self.cmd, "-o", str(path), "-n", "-t", "1000"],
+                [self.cmd, "-o", str(path), "-n", *config.CAMERA_ARGS],
                 check=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,

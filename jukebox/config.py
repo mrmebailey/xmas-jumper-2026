@@ -33,7 +33,16 @@ ALSA_CARD = None  # set to a card index/name if "amixer sset Master" needs -c <c
 
 # Tried in order; whichever is found on PATH first is used to capture a photo.
 CAMERA_CMDS = ["rpicam-still", "libcamera-still", "raspistill"]
+# 1296x972 is the ov5647's binned mode: the full field of view (larger sizes
+# like 1920x1080 crop in) with a quarter of the pixels, so it captures, encodes
+# and loads much faster on the Pi Zero. 500ms is enough for exposure to settle;
+# no EXIF thumbnail and fast colour denoise skip the slowest software steps.
+# Note --denoise is rpicam/libcamera-still only; drop it if using raspistill.
+CAMERA_ARGS = ["--width", "1296", "--height", "972", "-t", "500", "-q", "85",
+               "--thumb", "none", "--denoise", "cdn_fast"]
 PHOTO_COUNTDOWN_SECONDS = 3
-PHOTO_PREVIEW_MS = 3000  # how long a new photo is shown before returning to the camera screen
+PHOTO_PREVIEW_MS = 3000
+# True crops the photo to fill the screen; False shows the whole photo.
+PHOTO_PREVIEW_FILL = False  # how long a new photo is shown before returning to the camera screen
 # Degrees anticlockwise to turn the photo for display (add 180 if it comes out upside down).
 PHOTO_ROTATION = -90
