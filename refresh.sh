@@ -4,6 +4,24 @@
 cd "$(dirname "$0")"
 LOG=/tmp/jukebox.log
 git pull
+
+# The autostart copy runs inside the desktop session, which has the display
+# settings an SSH login lacks (X11 vs Wayland, auth, session bus). Borrow them
+# from a desktop process so the new copy starts exactly as it would at login.
+session_pid=$(pgrep -n -u "$(id -u)" -x 'labwc|wayfire|openbox|lxsession|pcmanfm|lxpanel|wf-panel-pi')
+if [ -n "$session_pid" ]; then
+  echo "Using desktop session from $(cat /proc/"$session_pid"/comm) (pid $session_pid)"
+  for var in DISPLAY WAYLAND_DISPLAY XAUTHORITY XDG_RUNTIME_DIR XDG_SESSION_TYPE DBUS_SESSION_BUS_ADDRESS; do
+    value=$(tr '\0' '\n' <"/proc/$session_pid/environ" | sed -n "s/^$var=//p")
+    if [ -n "$value" ]; then
+      export "$var=$value"
+      echo "  $var=$value"
+    fi
+  done
+else
+  echo "No desktop session found - falling back to run.sh defaults."
+fi
+
 pkill -f jukebox.main
 # Wait (up to 5s) for the old copy to exit so it releases the screen and sound card.
 i=0
