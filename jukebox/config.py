@@ -33,5 +33,5 @@ ALSA_CARD = None  # set to a card index/name if "amixer sset Master" needs -c <c
 # Tried in order; whichever is found on PATH first is used to capture a photo.
 CAMERA_CMDS = ["rpicam-still", "libcamera-still", "raspistill"]
 PHOTO_PREVIEW_MS = 3000  # how long a new photo is shown before returning to the camera screen
-# Degrees anticlockwise to turn the photo for display; use -90 if it comes out upside down.
-PHOTO_ROTATION = 90
+# Degrees anticlockwise to turn the photo for display (add 180 if it comes out upside down).
+PHOTO_ROTATION = -90
