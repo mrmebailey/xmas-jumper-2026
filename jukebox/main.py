@@ -39,6 +39,7 @@ class App:
         pygame.mouse.set_visible(False)
         self.clock = pygame.time.Clock()
 
+        self.font_countdown = pygame.font.Font(None, config.FONT_SIZE_COUNTDOWN)
         self.font_title = pygame.font.Font(None, config.FONT_SIZE_TITLE)
         self.font_large = pygame.font.Font(None, config.FONT_SIZE_LARGE)
         self.font_medium = pygame.font.Font(None, config.FONT_SIZE_MEDIUM)

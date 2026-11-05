@@ -22,6 +22,7 @@ SNOWFLAKES = 40
 LIGHTS_WIRE_COLOR = (20, 90, 40)
 LIGHT_COLORS = [(230, 40, 40), (240, 200, 70), (60, 200, 90), (70, 140, 240)]
 
+FONT_SIZE_COUNTDOWN = 400
 FONT_SIZE_TITLE = 64
 FONT_SIZE_LARGE = 52
 FONT_SIZE_MEDIUM = 42
@@ -32,6 +33,7 @@ ALSA_CARD = None  # set to a card index/name if "amixer sset Master" needs -c <c
 
 # Tried in order; whichever is found on PATH first is used to capture a photo.
 CAMERA_CMDS = ["rpicam-still", "libcamera-still", "raspistill"]
+PHOTO_COUNTDOWN_SECONDS = 3
 PHOTO_PREVIEW_MS = 3000  # how long a new photo is shown before returning to the camera screen
 # Degrees anticlockwise to turn the photo for display (add 180 if it comes out upside down).
 PHOTO_ROTATION = -90
