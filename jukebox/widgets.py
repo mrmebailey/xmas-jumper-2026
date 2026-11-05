@@ -3,6 +3,31 @@ import pygame
 from . import config
 
 
+def wrap_lines(text, font, max_width):
+    """Split text into lines that each render no wider than max_width."""
+    lines, line = [], ""
+    for word in text.split():
+        candidate = f"{line} {word}".strip()
+        if line and font.size(candidate)[0] > max_width:
+            lines.append(line)
+            line = word
+        else:
+            line = candidate
+    if line:
+        lines.append(line)
+    return lines
+
+
+def draw_text(surface, text, font, center_x, top, max_width, color=config.TEXT_COLOR):
+    """Draw text wrapped and centred, returning the y just below the last line."""
+    y = top
+    for line in wrap_lines(text, font, max_width):
+        rendered = font.render(line, True, color)
+        surface.blit(rendered, rendered.get_rect(midtop=(center_x, y)))
+        y += font.get_linesize()
+    return y
+
+
 class Button:
     def __init__(self, rect, label, callback, font):
         self.rect = pygame.Rect(rect)
@@ -22,6 +47,7 @@ class Button:
     def draw(self, surface):
         color = config.BUTTON_ACTIVE_COLOR if self._pressed else config.BUTTON_COLOR
         pygame.draw.rect(surface, color, self.rect, border_radius=12)
+        pygame.draw.rect(surface, config.BUTTON_BORDER_COLOR, self.rect, width=3, border_radius=12)
         text = self.font.render(self.label, True, config.TEXT_COLOR)
         surface.blit(text, text.get_rect(center=self.rect.center))
 

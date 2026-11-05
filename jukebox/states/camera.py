@@ -1,7 +1,7 @@
 import pygame
 
 from .. import config
-from ..widgets import Button
+from ..widgets import Button, draw_text
 from .base import State
 
 
@@ -28,9 +28,13 @@ class CameraState(State):
             return
         self.status = f"Saved {path.name}"
         image = pygame.image.load(str(path))
-        scale = min(config.SCREEN_W / image.get_width(), config.SCREEN_H / image.get_height())
-        size = (int(image.get_width() * scale), int(image.get_height() * scale))
-        self.preview = pygame.transform.scale(image, size)
+        w, h = image.get_size()
+        # Fit against the turned-round size, but scale before rotating: turning the
+        # full-resolution photo is much slower on the Pi Zero.
+        fit_w, fit_h = (h, w) if config.PHOTO_ROTATION % 180 else (w, h)
+        scale = min(config.SCREEN_W / fit_w, config.SCREEN_H / fit_h)
+        image = pygame.transform.scale(image, (int(w * scale), int(h * scale)))
+        self.preview = pygame.transform.rotate(image, config.PHOTO_ROTATION)
         self.preview_until = pygame.time.get_ticks() + config.PHOTO_PREVIEW_MS
 
     def handle_event(self, event):
@@ -44,13 +48,11 @@ class CameraState(State):
             self.preview = None
 
     def draw(self, surface):
-        surface.fill(config.BG_COLOR)
         if self.preview is not None:
+            self.draw_background(surface)
             surface.blit(self.preview, self.preview.get_rect(center=(config.SCREEN_W // 2, config.SCREEN_H // 2)))
             return
-        title = self.app.font_large.render("Spy Cam", True, config.TEXT_COLOR)
-        surface.blit(title, title.get_rect(center=(config.SCREEN_W // 2, 100)))
-        status = self.app.font_small.render(self.status, True, config.TEXT_COLOR)
-        surface.blit(status, status.get_rect(center=(config.SCREEN_W // 2, 200)))
+        self.draw_background(surface, "Santa's Spy Cam")
+        draw_text(surface, self.status, self.app.font_medium, config.SCREEN_W // 2, 180, config.SCREEN_W - 60)
         for button in self.buttons:
             button.draw(surface)

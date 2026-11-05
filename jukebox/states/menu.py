@@ -1,5 +1,5 @@
 from .. import config
-from ..widgets import Button
+from ..widgets import Button, draw_text
 from .base import State
 
 
@@ -17,8 +17,8 @@ class MenuState(State):
             button.handle_event(event)
 
     def draw(self, surface):
-        surface.fill(config.BG_COLOR)
-        title = self.app.font_large.render("Christmas Jukebox", True, config.TEXT_COLOR)
-        surface.blit(title, title.get_rect(center=(config.SCREEN_W // 2, 70)))
+        self.draw_background(surface, "Christmas Jukebox")
         for button in self.buttons:
             button.draw(surface)
+        draw_text(surface, "Merry Christmas!", self.app.font_medium, config.SCREEN_W // 2, 360,
+                  config.SCREEN_W - 40, config.TITLE_COLOR)

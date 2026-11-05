@@ -1,5 +1,5 @@
 from .. import config
-from ..widgets import Button, Slider
+from ..widgets import Button, Slider, draw_text
 from .base import State
 
 
@@ -28,15 +28,14 @@ class MusicState(State):
         self.play_button.label = "Pause" if self.app.audio.playing else "Play"
 
     def draw(self, surface):
-        surface.fill(config.BG_COLOR)
-        name = self.app.audio.current_track_name
-        text = self.app.font_medium.render(name, True, config.TEXT_COLOR)
-        surface.blit(text, text.get_rect(center=(config.SCREEN_W // 2, 120)))
+        self.draw_background(surface, "Christmas Tunes")
+        draw_text(surface, self.app.audio.current_track_name, self.app.font_medium, config.SCREEN_W // 2, 110,
+                  config.SCREEN_W - 60)
 
         volume_label = self.app.font_small.render(
             f"Volume: {int(self.slider.value)}%", True, config.TEXT_COLOR
         )
-        surface.blit(volume_label, (40, 270))
+        surface.blit(volume_label, (40, 258))
         self.slider.draw(surface)
 
         for button in self.buttons:

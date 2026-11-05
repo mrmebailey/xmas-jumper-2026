@@ -1,8 +1,7 @@
 import random
-import textwrap
 
 from .. import config
-from ..widgets import Button
+from ..widgets import Button, draw_text
 from .base import State
 
 
@@ -30,12 +29,7 @@ class JokesState(State):
         self.app.audio.poll_speak()
 
     def draw(self, surface):
-        surface.fill(config.BG_COLOR)
-        lines = textwrap.wrap(self.joke, width=38)
-        y = 100
-        for line in lines:
-            text = self.app.font_medium.render(line, True, config.TEXT_COLOR)
-            surface.blit(text, text.get_rect(center=(config.SCREEN_W // 2, y)))
-            y += 36
+        self.draw_background(surface, "Cracker Jokes")
+        draw_text(surface, self.joke, self.app.font_medium, config.SCREEN_W // 2, 110, config.SCREEN_W - 60)
         for button in self.buttons:
             button.draw(surface)

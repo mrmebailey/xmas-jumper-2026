@@ -7,6 +7,7 @@ import pygame
 from . import config
 from .audio import AudioManager
 from .camera import CameraManager
+from .decor import Snow
 from .jokes_loader import parse_jokes
 from .music_loader import load_playlist
 from .states.camera import CameraState
@@ -38,6 +39,7 @@ class App:
         pygame.mouse.set_visible(False)
         self.clock = pygame.time.Clock()
 
+        self.font_title = pygame.font.Font(None, config.FONT_SIZE_TITLE)
         self.font_large = pygame.font.Font(None, config.FONT_SIZE_LARGE)
         self.font_medium = pygame.font.Font(None, config.FONT_SIZE_MEDIUM)
         self.font_small = pygame.font.Font(None, config.FONT_SIZE_SMALL)
@@ -48,6 +50,7 @@ class App:
         self.audio_volume = 70
         self.audio.set_volume(self.audio_volume)
         self.camera = CameraManager()
+        self.snow = Snow()
 
         self.states = {
             "menu": MenuState(self),
@@ -85,6 +88,7 @@ class App:
                 else:
                     self.current_state.handle_event(event)
             t2 = time.monotonic()
+            self.snow.update()
             self.current_state.update()
             self.current_state.draw(self.screen)
             t3 = time.monotonic()
