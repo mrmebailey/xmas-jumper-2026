@@ -27,8 +27,11 @@ def _log(msg):
 
 class App:
     def __init__(self):
+        # SDL's accelerated window framebuffer stalls ~5s per flip on the Pi Zero
+        # touchscreen; the plain X11 framebuffer flips in ~100ms.
+        os.environ.setdefault("SDL_FRAMEBUFFER_ACCELERATION", "0")
         pygame.init()
-        if PROFILE:
+        if PROFILE and pygame.display.get_init():
             _log(f"SDL video driver: {pygame.display.get_driver()}")
         self.screen = pygame.display.set_mode((config.SCREEN_W, config.SCREEN_H), pygame.FULLSCREEN)
         pygame.display.set_caption("Christmas Jukebox")
