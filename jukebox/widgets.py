@@ -1,3 +1,5 @@
+import math
+
 import pygame
 
 from . import config
@@ -28,28 +30,66 @@ def draw_text(surface, text, font, center_x, top, max_width, color=config.TEXT_C
     return y
 
 
+# Button callbacks waiting for their bounce to play; see run_pending_callbacks().
+_pending = []
+
+
+def run_pending_callbacks():
+    """Fire button callbacks whose delay has passed. Called once per frame."""
+    now = pygame.time.get_ticks()
+    due = [cb for fire_at, cb in _pending if fire_at <= now]
+    _pending[:] = [(fire_at, cb) for fire_at, cb in _pending if fire_at > now]
+    for callback in due:
+        callback()
+
+
+def clear_pending_callbacks():
+    _pending.clear()
+
+
 class Button:
+    """Squashes while held and springs back with a bounce when released. The
+    callback is held back by BUTTON_FIRE_DELAY_MS so the bounce is seen
+    before the screen changes."""
+
     def __init__(self, rect, label, callback, font):
         self.rect = pygame.Rect(rect)
         self.label = label
         self.callback = callback
         self.font = font
         self._pressed = False
+        self._released_at = None
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
             self._pressed = True
         elif event.type == pygame.MOUSEBUTTONUP:
             if self._pressed and self.rect.collidepoint(event.pos):
-                self.callback()
+                self._released_at = pygame.time.get_ticks()
+                _pending.append((self._released_at + config.BUTTON_FIRE_DELAY_MS, self.callback))
             self._pressed = False
 
+    def _scale(self):
+        if self._pressed:
+            return config.BUTTON_SQUASH
+        if self._released_at is None:
+            return 1.0
+        t = (pygame.time.get_ticks() - self._released_at) / config.BUTTON_BOUNCE_MS
+        if t >= 1:
+            self._released_at = None
+            return 1.0
+        # Damped spring from the squashed size: overshoots, dips, then settles at 1.
+        return 1 - (1 - config.BUTTON_SQUASH) * math.cos(3 * math.pi * t) * (1 - t)
+
     def draw(self, surface):
-        color = config.BUTTON_ACTIVE_COLOR if self._pressed else config.BUTTON_COLOR
-        pygame.draw.rect(surface, color, self.rect, border_radius=12)
-        pygame.draw.rect(surface, config.BUTTON_BORDER_COLOR, self.rect, width=3, border_radius=12)
+        scale = self._scale()
+        lit = self._pressed or self._released_at is not None
+        rect = self.rect.inflate(int(self.rect.width * (scale - 1)), int(self.rect.height * (scale - 1)))
+        color = config.BUTTON_ACTIVE_COLOR if lit else config.BUTTON_COLOR
+        pygame.draw.rect(surface, color, rect, border_radius=12)
+        pygame.draw.rect(surface, config.BUTTON_BORDER_COLOR, rect, width=3, border_radius=12)
         text = self.font.render(self.label, True, config.TEXT_COLOR)
-        surface.blit(text, text.get_rect(center=self.rect.center))
+        surface.blit(text, text.get_rect(center=rect.center))
 
 
 class Slider:

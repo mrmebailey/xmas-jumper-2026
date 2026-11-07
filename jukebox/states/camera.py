@@ -1,6 +1,7 @@
 import pygame
 
 from .. import config
+from ..photos import load_for_screen
 from ..widgets import Button, draw_text
 from .base import State
 
@@ -20,6 +21,8 @@ class CameraState(State):
 
     def _take_photo(self):
         self.countdown_until = pygame.time.get_ticks() + config.PHOTO_COUNTDOWN_SECONDS * 1000
+        # Start the camera now so its startup happens during the countdown.
+        self.app.camera.warm_up()
 
     def _capture(self):
         # Capturing blocks the main loop, so put the message on screen first.
@@ -28,22 +31,16 @@ class CameraState(State):
         pygame.display.flip()
         self.capturing = False
 
-        path, error = self.app.camera.take_photo()
+        path, error = self.app.camera.capture()
         if error:
             self.status = error
             return
         self.status = f"Saved {path.name}"
-        image = pygame.image.load(str(path))
-        w, h = image.get_size()
-        # Scale to fit (or, with PHOTO_PREVIEW_FILL, to cover and crop) the screen
-        # using the turned-round size, but scale before rotating: turning the
-        # full-resolution photo is much slower on the Pi Zero.
-        fit_w, fit_h = (h, w) if config.PHOTO_ROTATION % 180 else (w, h)
-        pick = max if config.PHOTO_PREVIEW_FILL else min
-        scale = pick(config.SCREEN_W / fit_w, config.SCREEN_H / fit_h)
-        image = pygame.transform.scale(image, (int(w * scale), int(h * scale)))
-        self.preview = pygame.transform.rotate(image, config.PHOTO_ROTATION)
+        self.preview = load_for_screen(path)
         self.preview_until = pygame.time.get_ticks() + config.PHOTO_PREVIEW_MS
+
+    def on_exit(self):
+        self.app.camera.cancel()
 
     def handle_event(self, event):
         if self.preview is not None or self.countdown_until is not None:

@@ -7,9 +7,10 @@ class MenuState(State):
     def on_enter(self):
         app = self.app
         self.buttons = [
-            Button((20, 160, 190, 160), "Jokes", lambda: app.change_state("jokes"), app.font_large),
-            Button((225, 160, 190, 160), "Music", lambda: app.change_state("music"), app.font_large),
-            Button((430, 160, 190, 160), "Camera", lambda: app.change_state("camera"), app.font_large),
+            Button((30, 100, 280, 120), "Jokes", lambda: app.change_state("jokes"), app.font_large),
+            Button((330, 100, 280, 120), "Music", lambda: app.change_state("music"), app.font_large),
+            Button((30, 235, 280, 120), "Camera", lambda: app.change_state("camera"), app.font_large),
+            Button((330, 235, 280, 120), "Photos", lambda: app.change_state("photos"), app.font_large),
         ]
 
     def handle_event(self, event):
@@ -20,5 +21,5 @@ class MenuState(State):
         self.draw_background(surface, "Christmas Jukebox")
         for button in self.buttons:
             button.draw(surface)
-        draw_text(surface, "Merry Christmas!", self.app.font_medium, config.SCREEN_W // 2, 360,
+        draw_text(surface, "Merry Christmas!", self.app.font_medium, config.SCREEN_W // 2, 385,
                   config.SCREEN_W - 40, config.TITLE_COLOR)

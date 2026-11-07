@@ -10,7 +10,9 @@ from .camera import CameraManager
 from .decor import Snow
 from .jokes_loader import parse_jokes
 from .music_loader import load_playlist
+from .widgets import clear_pending_callbacks, run_pending_callbacks
 from .states.camera import CameraState
+from .states.photos import PhotosState
 from .states.jokes import JokesState
 from .states.menu import MenuState
 from .states.music import MusicState
@@ -58,6 +60,7 @@ class App:
             "jokes": JokesState(self),
             "music": MusicState(self),
             "camera": CameraState(self),
+            "photos": PhotosState(self),
         }
         self.current_state = None
         self.change_state("menu")
@@ -66,6 +69,8 @@ class App:
             _log(f"display info: {pygame.display.Info()}")
 
     def change_state(self, name):
+        # Drop taps still waiting to fire on the screen being left.
+        clear_pending_callbacks()
         if self.current_state is not None:
             self.current_state.on_exit()
         self.current_state = self.states[name]
@@ -88,6 +93,7 @@ class App:
                     self.running = False
                 else:
                     self.current_state.handle_event(event)
+            run_pending_callbacks()
             t2 = time.monotonic()
             self.snow.update()
             self.current_state.update()

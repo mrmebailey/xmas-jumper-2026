@@ -17,6 +17,11 @@ TEXT_COLOR = (255, 255, 255)
 TITLE_COLOR = (240, 200, 70)
 ACCENT_COLOR = (0, 150, 70)
 
+# Button feel: squashed to this size while held, then a springy bounce back.
+BUTTON_SQUASH = 0.88
+BUTTON_BOUNCE_MS = 350
+BUTTON_FIRE_DELAY_MS = 150  # lets the bounce show before the screen changes
+
 SNOW_COLOR = (235, 240, 255)
 SNOWFLAKES = 40
 LIGHTS_WIRE_COLOR = (20, 90, 40)
@@ -35,14 +40,17 @@ ALSA_CARD = None  # set to a card index/name if "amixer sset Master" needs -c <c
 CAMERA_CMDS = ["rpicam-still", "libcamera-still", "raspistill"]
 # 1296x972 is the ov5647's binned mode: the full field of view (larger sizes
 # like 1920x1080 crop in) with a quarter of the pixels, so it captures, encodes
-# and loads much faster on the Pi Zero. 500ms is enough for exposure to settle;
-# no EXIF thumbnail and fast colour denoise skip the slowest software steps.
+# and loads much faster on the Pi Zero. No EXIF thumbnail and fast colour
+# denoise skip the slowest software steps.
 # Note --denoise is rpicam/libcamera-still only; drop it if using raspistill.
-CAMERA_ARGS = ["--width", "1296", "--height", "972", "-t", "500", "-q", "85",
+CAMERA_ARGS = ["--width", "1296", "--height", "972", "-q", "85",
                "--thumb", "none", "--denoise", "cdn_fast"]
+# Exposure settling time when the camera wasn't warmed up during the countdown.
+CAMERA_SETTLE_MS = 500
 PHOTO_COUNTDOWN_SECONDS = 3
 PHOTO_PREVIEW_MS = 3000
 # True crops the photo to fill the screen; False shows the whole photo.
-PHOTO_PREVIEW_FILL = False  # how long a new photo is shown before returning to the camera screen
+PHOTO_PREVIEW_FILL = False
+DELETE_CONFIRM_MS = 3000  # how long the "Sure?" delete confirmation waits for a second tap  # how long a new photo is shown before returning to the camera screen
 # Degrees anticlockwise to turn the photo for display (add 180 if it comes out upside down).
 PHOTO_ROTATION = -90
