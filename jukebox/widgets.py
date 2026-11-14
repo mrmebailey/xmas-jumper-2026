@@ -43,6 +43,10 @@ def run_pending_callbacks():
         callback()
 
 
+def has_pending_callbacks():
+    return bool(_pending)
+
+
 def clear_pending_callbacks():
     _pending.clear()
 

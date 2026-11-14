@@ -119,6 +119,11 @@ class AudioManager:
         self._speech_sound = None
 
     @property
+    def music_active(self):
+        # get_busy() is False once a track ends or while paused.
+        return self.playing and pygame.mixer.music.get_busy()
+
+    @property
     def speaking(self):
         return self._speak_proc is not None or self._speech_channel is not None
 

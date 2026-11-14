@@ -10,7 +10,7 @@ from .camera import CameraManager
 from .decor import Snow
 from .jokes_loader import parse_jokes
 from .music_loader import load_playlist
-from .widgets import clear_pending_callbacks, run_pending_callbacks
+from .widgets import clear_pending_callbacks, has_pending_callbacks, run_pending_callbacks
 from .states.camera import CameraState
 from .states.photos import PhotosState
 from .states.jokes import JokesState
@@ -22,6 +22,7 @@ from .states.music import MusicState
 PROFILE = os.environ.get("JUKEBOX_PROFILE") == "1"
 SLOW_FRAME_MS = 100
 _TOUCH_EVENTS = {pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.FINGERDOWN, pygame.FINGERUP}
+_INPUT_EVENTS = _TOUCH_EVENTS | {pygame.MOUSEMOTION, pygame.KEYDOWN}
 
 
 def _log(msg):
@@ -70,8 +71,17 @@ class App:
         self.current_state = None
         self.change_state("menu")
         self.running = True
+        self._last_input = 0
         if PROFILE:
             _log(f"display info: {pygame.display.Info()}")
+
+    def _low_power(self):
+        """True while audio is playing and the screen is left alone."""
+        if not (self.audio.music_active or self.audio.speaking):
+            return False
+        if has_pending_callbacks():
+            return False
+        return pygame.time.get_ticks() - self._last_input > config.LOW_POWER_AFTER_INPUT_MS
 
     def change_state(self, name):
         # Drop taps still waiting to fire on the screen being left.
@@ -92,6 +102,8 @@ class App:
                     # pygame.time.get_ticks() to see how long it sat in the queue.
                     queued = pygame.time.get_ticks() - getattr(event, "timestamp", pygame.time.get_ticks())
                     _log(f"{pygame.event.event_name(event.type)} {getattr(event, 'pos', '')} queued={queued}ms")
+                if event.type in _INPUT_EVENTS:
+                    self._last_input = pygame.time.get_ticks()
                 if event.type == pygame.QUIT:
                     self.running = False
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -102,7 +114,8 @@ class App:
             self.audio.poll_volume()
             self.audio.poll_speak()
             t2 = time.monotonic()
-            self.snow.update()
+            low_power = self._low_power()
+            self.snow.update(moving=not low_power)
             self.current_state.update()
             self.current_state.draw(self.screen)
             t3 = time.monotonic()
@@ -114,7 +127,15 @@ class App:
                     f"handle={(t2 - t1) * 1000:.0f} ({len(events)} events) "
                     f"draw={(t3 - t2) * 1000:.0f} flip={(t4 - t3) * 1000:.0f}"
                 )
-            self.clock.tick(config.FPS_WHILE_SPEAKING if self.audio.speaking else config.FPS)
+            if low_power:
+                # Sleep until the next slow frame, but wake at once for a touch:
+                # put it back for the next pygame.event.get() to handle.
+                event = pygame.event.wait(config.LOW_POWER_FRAME_MS)
+                if event.type != pygame.NOEVENT:
+                    pygame.event.post(event)
+                self.clock.tick()
+            else:
+                self.clock.tick(config.FPS)
         pygame.quit()
 
 

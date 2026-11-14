@@ -9,9 +9,12 @@ PHOTOS_DIR = REPO_ROOT / "photos"
 
 SCREEN_W, SCREEN_H = 640, 480
 # The Pi Zero has one slow core shared with audio (Bluetooth encoding, speech),
-# so redraw sparingly, and slower still while a joke is being spoken.
+# so redraw sparingly. While music or a joke is playing and nobody is touching
+# the screen, the snow stops and the screen redraws only every LOW_POWER_FRAME_MS
+# (a tap still wakes it instantly), leaving the CPU to the audio.
 FPS = 12
-FPS_WHILE_SPEAKING = 4
+LOW_POWER_FRAME_MS = 500
+LOW_POWER_AFTER_INPUT_MS = 1500  # stay at full speed this long after a touch
 # Samples per audio chunk: bigger means fewer wake-ups (less CPU) for a little
 # more delay, which doesn't matter for music.
 AUDIO_BUFFER = 4096

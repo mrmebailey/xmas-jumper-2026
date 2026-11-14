@@ -17,10 +17,12 @@ class Snow:
     def _new_flake(y):
         return [random.uniform(0, config.SCREEN_W), y, random.uniform(25, 60), random.randint(1, 3)]
 
-    def update(self):
+    def update(self, moving=True):
         now = pygame.time.get_ticks()
         dt = (now - self._last_ticks) / 1000
         self._last_ticks = now
+        if not moving:
+            return
         for i, flake in enumerate(self.flakes):
             flake[1] += flake[2] * dt
             if flake[1] > config.SCREEN_H:
