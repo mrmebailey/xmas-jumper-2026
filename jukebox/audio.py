@@ -97,6 +97,10 @@ class AudioManager:
             pygame.mixer.music.pause()
         self._speak_proc = subprocess.Popen([config.ESPEAK_CMD, text])
 
+    @property
+    def speaking(self):
+        return self._speak_proc is not None
+
     def poll_speak(self):
         if self._speak_proc is not None and self._speak_proc.poll() is not None:
             self._speak_proc = None

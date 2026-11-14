@@ -7,7 +7,13 @@ MUSIC_DIR = REPO_ROOT / "music"
 PHOTOS_DIR = REPO_ROOT / "photos"
 
 SCREEN_W, SCREEN_H = 640, 480
-FPS = 30
+# The Pi Zero has one slow core shared with audio (Bluetooth encoding, speech),
+# so redraw sparingly, and slower still while a joke is being spoken.
+FPS = 12
+FPS_WHILE_SPEAKING = 4
+# Samples per audio chunk: bigger means fewer wake-ups (less CPU) for a little
+# more delay, which doesn't matter for music.
+AUDIO_BUFFER = 4096
 
 BG_COLOR = (8, 48, 28)
 BUTTON_COLOR = (180, 30, 30)
@@ -23,7 +29,7 @@ BUTTON_BOUNCE_MS = 350
 BUTTON_FIRE_DELAY_MS = 150  # lets the bounce show before the screen changes
 
 SNOW_COLOR = (235, 240, 255)
-SNOWFLAKES = 40
+SNOWFLAKES = 25
 LIGHTS_WIRE_COLOR = (20, 90, 40)
 LIGHT_COLORS = [(230, 40, 40), (240, 200, 70), (60, 200, 90), (70, 140, 240)]
 

@@ -33,6 +33,11 @@ class App:
         # SDL's accelerated window framebuffer stalls ~5s per flip on the Pi Zero
         # touchscreen; the plain X11 framebuffer flips in ~100ms.
         os.environ.setdefault("SDL_FRAMEBUFFER_ACCELERATION", "0")
+        # Talk to PipeWire directly rather than through its PulseAudio layer
+        # (pipewire-pulse), which was costing ~20% CPU; fall back if unavailable.
+        os.environ.setdefault("SDL_AUDIODRIVER", "pipewire,pulseaudio,alsa")
+        # Must come before pygame.init(), which otherwise starts the mixer with defaults.
+        pygame.mixer.pre_init(buffer=config.AUDIO_BUFFER)
         pygame.init()
         if PROFILE and pygame.display.get_init():
             _log(f"SDL video driver: {pygame.display.get_driver()}")
@@ -95,6 +100,7 @@ class App:
                     self.current_state.handle_event(event)
             run_pending_callbacks()
             self.audio.poll_volume()
+            self.audio.poll_speak()
             t2 = time.monotonic()
             self.snow.update()
             self.current_state.update()
@@ -108,7 +114,7 @@ class App:
                     f"handle={(t2 - t1) * 1000:.0f} ({len(events)} events) "
                     f"draw={(t3 - t2) * 1000:.0f} flip={(t4 - t3) * 1000:.0f}"
                 )
-            self.clock.tick(config.FPS)
+            self.clock.tick(config.FPS_WHILE_SPEAKING if self.audio.speaking else config.FPS)
         pygame.quit()
 
 

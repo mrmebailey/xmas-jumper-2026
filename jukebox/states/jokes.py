@@ -25,9 +25,6 @@ class JokesState(State):
         for button in self.buttons:
             button.handle_event(event)
 
-    def update(self):
-        self.app.audio.poll_speak()
-
     def draw(self, surface):
         self.draw_background(surface, "Cracker Jokes")
         draw_text(surface, self.joke, self.app.font_medium, config.SCREEN_W // 2, 110, config.SCREEN_W - 60)
