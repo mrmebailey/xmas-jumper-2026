@@ -12,6 +12,8 @@ class AudioManager:
         self.track_index = 0
         self.playing = False
         self._speak_proc = None
+        self._speech_sound = None
+        self._speech_channel = None
         self._music_was_playing_before_speak = False
         # PipeWire's default output covers everything (music, spoken jokes, a
         # Bluetooth speaker); amixer only reaches a local ALSA card.
@@ -92,17 +94,44 @@ class AudioManager:
         self._volume_proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def speak(self, text):
-        self._music_was_playing_before_speak = self.playing
-        if self.playing:
-            pygame.mixer.music.pause()
-        self._speak_proc = subprocess.Popen([config.ESPEAK_CMD, text])
+        """Speak a joke. espeak-ng renders it to a WAV first and pygame plays that:
+        synthesising live on the Pi Zero's busy CPU made the speech stutter,
+        whereas playing a finished file is as smooth as the music."""
+        if not self.speaking:
+            self._music_was_playing_before_speak = self.playing
+            if self.playing:
+                pygame.mixer.music.pause()
+        self._stop_speech()
+        self._speak_proc = subprocess.Popen(
+            [config.ESPEAK_CMD, "-w", str(config.SPEECH_WAV), text],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+    def _stop_speech(self):
+        if self._speak_proc is not None and self._speak_proc.poll() is None:
+            self._speak_proc.kill()
+            self._speak_proc.wait()
+        self._speak_proc = None
+        if self._speech_channel is not None:
+            self._speech_channel.stop()
+        self._speech_channel = None
+        self._speech_sound = None
 
     @property
     def speaking(self):
-        return self._speak_proc is not None
+        return self._speak_proc is not None or self._speech_channel is not None
 
     def poll_speak(self):
         if self._speak_proc is not None and self._speak_proc.poll() is not None:
+            ok = self._speak_proc.returncode == 0
             self._speak_proc = None
-            if self._music_was_playing_before_speak:
-                pygame.mixer.music.unpause()
+            if ok:
+                self._speech_sound = pygame.mixer.Sound(str(config.SPEECH_WAV))
+                self._speech_channel = self._speech_sound.play()
+        if self._speech_channel is not None and not self._speech_channel.get_busy():
+            self._speech_channel = None
+            self._speech_sound = None
+        if not self.speaking and self._music_was_playing_before_speak:
+            self._music_was_playing_before_speak = False
+            pygame.mixer.music.unpause()

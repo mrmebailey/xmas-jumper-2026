@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -40,6 +41,7 @@ FONT_SIZE_MEDIUM = 42
 FONT_SIZE_SMALL = 34
 
 ESPEAK_CMD = "espeak-ng"
+SPEECH_WAV = Path(tempfile.gettempdir()) / "jukebox-joke.wav"  # each joke is rendered here, then played
 ALSA_CARD = None  # set to a card index/name if "amixer sset Master" needs -c <card>
 
 # Tried in order; whichever is found on PATH first is used to capture a photo.
