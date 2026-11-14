@@ -94,6 +94,7 @@ class App:
                 else:
                     self.current_state.handle_event(event)
             run_pending_callbacks()
+            self.audio.poll_volume()
             t2 = time.monotonic()
             self.snow.update()
             self.current_state.update()
