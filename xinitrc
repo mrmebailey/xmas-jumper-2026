@@ -11,6 +11,9 @@ xset s noblank
 # Start minimal window manager in background
 openbox &
 
+# Reconnect the Bluetooth speaker whenever it comes back on (see bt-speaker.sh)
+"$REPO_DIR/bt-speaker.sh" &
+
 # xinit shuts X down when this script ends, so keep the jukebox in a loop:
 # when it exits (crash, Esc, or refresh.sh stopping it) it starts again
 # with the latest code while X stays up.

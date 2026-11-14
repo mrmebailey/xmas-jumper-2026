@@ -30,6 +30,19 @@ sudo reboot
 
 To launch it immediately without logging out/in: `./run.sh`. Press `Esc` to quit back to the desktop.
 
+### Bluetooth speaker
+
+Pair once over SSH (speaker in pairing mode), then save its address so `bt-speaker.sh` keeps it connected:
+
+```sh
+sudo apt-get install -y libspa-0.2-bluetooth   # PipeWire's Bluetooth audio support
+bluetoothctl                                   # then: power on, agent on, default-agent,
+                                               # scan on, pair <MAC>, trust <MAC>, connect <MAC>, exit
+echo <MAC> > ~/.jukebox-speaker
+wpctl status                                   # find the speaker's number under Sinks
+wpctl set-default <number>                     # remembered, and used again whenever it reconnects
+```
+
 ### Running under xinit (no desktop)
 
 The Pi in use boots to a console and starts X with `xinit`, which runs `~/.xinitrc`. Link it to the repo's `xinitrc` once:
@@ -59,6 +72,7 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 - `jukebox/camera.py` — shells out to the camera CLI tool, saves to `photos/`
 - `jukebox/jokes_loader.py`, `jukebox/music_loader.py` — parse `jokes.txt` / scan `music/`
 - `refresh.sh` — `git pull` and restart the running jukebox without a reboot
+- `bt-speaker.sh` — keeps the Bluetooth speaker in `~/.jukebox-speaker` connected (started by `xinitrc`)
 - `xinitrc` — X session for xinit: disables blanking, starts openbox, runs the jukebox in a restart loop
 - `run.sh` — launched by `xinitrc` (or the desktop autostart entry `setup.sh` creates); `cd`s to the repo and runs the app
 
