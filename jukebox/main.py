@@ -88,6 +88,7 @@ class App:
         self.running = True
         self.low_power = False
         self._last_input = 0
+        self._reapply_volume_at = None
         self._last_frame = None  # what's on screen, while in low power
         if PROFILE:
             _log(f"display info: {pygame.display.Info()}")
@@ -131,6 +132,11 @@ class App:
                     # pygame.time.get_ticks() to see how long it sat in the queue.
                     queued = pygame.time.get_ticks() - getattr(event, "timestamp", pygame.time.get_ticks())
                     _log(f"{pygame.event.event_name(event.type)} {getattr(event, 'pos', '')} queued={queued}ms")
+                if event.type == pygame.AUDIODEVICEADDED and not getattr(event, "iscapture", False):
+                    # A speaker has appeared (e.g. the Bluetooth one switched
+                    # on). It comes up at its own saved volume, which can be 0,
+                    # so set it to the slider's volume once it has settled in.
+                    self._reapply_volume_at = pygame.time.get_ticks() + config.VOLUME_REAPPLY_MS
                 if event.type in _INPUT_EVENTS:
                     self._last_input = pygame.time.get_ticks()
                 if event.type == pygame.QUIT:
@@ -140,6 +146,9 @@ class App:
                 else:
                     self.current_state.handle_event(event)
             run_pending_callbacks()
+            if self._reapply_volume_at is not None and pygame.time.get_ticks() >= self._reapply_volume_at:
+                self._reapply_volume_at = None
+                self.audio.set_volume(self.audio_volume)
             self.audio.poll_volume()
             self.audio.poll_speak()
             self.audio.poll_music()

@@ -61,6 +61,9 @@ SCORES_FILE = Path.home() / ".local" / "share" / "jukebox" / "scores.json"
 
 ESPEAK_CMD = "espeak-ng"
 SPEECH_WAV = Path(tempfile.gettempdir()) / "jukebox-joke.wav"  # each joke is rendered here, then played
+# When a speaker connects, wait this long (for PipeWire to finish setting it
+# up with its own saved volume) and then set it to the slider's volume.
+VOLUME_REAPPLY_MS = 2500
 ALSA_CARD = None  # set to a card index/name if "amixer sset Master" needs -c <card>
 
 # Tried in order; whichever is found on PATH first is used to capture a photo.
