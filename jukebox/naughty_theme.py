@@ -33,7 +33,7 @@ THEMES = {
 }
 
 
-def theme_photo(path, verdict, line):
+def theme_photo(path, verdict, line, naughtiness=None):
     """Draw the verdict's theme onto the photo at path and save it in place.
     Returns False (leaving the plain photo) if anything goes wrong."""
     try:
@@ -42,7 +42,7 @@ def theme_photo(path, verdict, line):
         return False
     photo = pygame.transform.rotate(raw, config.PHOTO_ROTATION).convert() \
         if pygame.display.get_surface() else pygame.transform.rotate(raw, config.PHOTO_ROTATION)
-    _decorate(photo, THEMES.get(verdict, THEMES["NICE!"]), verdict, line)
+    _decorate(photo, THEMES.get(verdict, THEMES["NICE!"]), verdict, line, naughtiness)
     try:
         pygame.image.save(pygame.transform.rotate(photo, -config.PHOTO_ROTATION), str(path))
     except pygame.error:
@@ -50,7 +50,7 @@ def theme_photo(path, verdict, line):
     return True
 
 
-def _decorate(surface, theme, verdict, line):
+def _decorate(surface, theme, verdict, line, naughtiness=None):
     w, h = surface.get_size()
     if verdict == "NAUGHTY!":
         # A grubby grey cast for the naughty list.
@@ -80,6 +80,10 @@ def _decorate(surface, theme, verdict, line):
         for x in (banner.x + 6, banner.right - 34):
             pygame.draw.polygon(surface, sprites.GOLD, _star(x + 14, banner.centery, 14, 6))
 
+    top = banner.bottom
+    if naughtiness is not None:
+        top = _draw_meter(surface, banner, naughtiness)
+
     # Santa's comment along the bottom.
     line_font = pygame.font.Font(None, max(28, w // 15))
     lines_h = line_font.get_linesize() * 3
@@ -91,7 +95,7 @@ def _decorate(surface, theme, verdict, line):
 
     # Pictures in the corners, just inside the frame.
     size = max(48, w // 8)
-    spots = [(BORDER + 6, banner.bottom + 8), (w - BORDER - 6 - size, banner.bottom + 8),
+    spots = [(BORDER + 6, top + 8), (w - BORDER - 6 - size, top + 8),
              (BORDER + 6, strip_y - size - 6), (w - BORDER - 6 - size, strip_y - size - 6)]
     for (x, y), picture in zip(spots, theme["corners"]):
         surface.blit(sprites.get(picture[0], size, *picture[1:]), (x, y))
@@ -100,8 +104,24 @@ def _decorate(surface, theme, verdict, line):
         # A little cloud of coal dust drifting about.
         rng = random.Random(line)
         for _ in range(40):
-            x, y = rng.uniform(BORDER, w - BORDER), rng.uniform(banner.bottom, strip_y)
+            x, y = rng.uniform(BORDER, w - BORDER), rng.uniform(top, strip_y)
             pygame.draw.circle(surface, (30, 30, 30), (x, y), rng.choice((2, 3, 4)))
+
+
+def _draw_meter(surface, banner, naughtiness):
+    """A "Naughty-o-meter" bar under the banner, green (nice) to red (naughty)."""
+    font = pygame.font.Font(None, max(26, banner.width // 16))
+    label = font.render(f"Naughty-o-meter: {naughtiness}%", True, sprites.WHITE)
+    bar = pygame.Rect(banner.x + 30, banner.bottom + 10, banner.width - 60, label.get_height() + 12)
+    pygame.draw.rect(surface, (20, 20, 20), bar, border_radius=10)
+    fill = bar.inflate(-6, -6)
+    fill.width = max(fill.height, int(fill.width * naughtiness / 100))
+    red = min(255, 60 + naughtiness * 2)
+    green = max(40, 220 - naughtiness * 2)
+    pygame.draw.rect(surface, (red, green, 50), fill, border_radius=8)
+    pygame.draw.rect(surface, sprites.WHITE, bar, width=2, border_radius=10)
+    surface.blit(label, label.get_rect(center=bar.center))
+    return bar.bottom
 
 
 def _star(cx, cy, outer, inner):

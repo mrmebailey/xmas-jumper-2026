@@ -18,6 +18,7 @@ from .games.snake import SnakeState
 from .states.camera import CameraState
 from .states.games import GamesState
 from .states.naughty import NaughtyState
+from .states.naughty_list import NaughtyListState
 from .states.photos import PhotosState
 from .states.jokes import JokesState
 from .states.menu import MenuState
@@ -82,6 +83,7 @@ class App:
             "baubles": BaublesState(self),
             "memory": MemoryState(self),
             "naughty": NaughtyState(self),
+            "naughty_list": NaughtyListState(self),
         }
         self.current_state = None
         self.change_state("menu")

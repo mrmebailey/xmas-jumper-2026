@@ -56,6 +56,8 @@ SHUFFLE = True
 # only has to decode each cover once.
 ART_CACHE_DIR = Path.home() / ".cache" / "jukebox" / "art"
 
+# Naughty or Nice scans that came out naughty, for the Naughty List.
+NAUGHTY_LIST_FILE = Path.home() / ".local" / "share" / "jukebox" / "naughty_list.json"
 # Best game scores, kept between restarts.
 SCORES_FILE = Path.home() / ".local" / "share" / "jukebox" / "scores.json"
 

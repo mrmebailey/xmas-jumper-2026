@@ -4,6 +4,7 @@ import pygame
 
 from .. import config
 from ..games import sprites
+from .. import naughty_list
 from ..naughty_theme import theme_photo
 from ..photos import load_for_screen
 from ..widgets import Button, draw_text, render_text
@@ -33,6 +34,9 @@ VERDICTS = [
     ]),
 ]
 
+# How naughty each verdict can be, as a percentage on the Naughty-o-meter.
+NAUGHTINESS = {"VERY NICE!": (1, 19), "NICE!": (20, 59), "NAUGHTY!": (60, 100)}
+
 
 class NaughtyState(State):
     """Naughty or Nice scanner: a pretend scan with the spy cam, then a photo
@@ -41,8 +45,10 @@ class NaughtyState(State):
 
     def on_enter(self):
         app = self.app
-        self.scan_button = Button((170, 385, 300, 75), "Scan me!", self._scan, app.font_medium)
-        self.again_button = Button((170, 385, 300, 75), "Again", self._reset, app.font_medium)
+        self.list_button = Button((20, 385, 150, 75), "Naughty\nList", lambda: app.change_state("naughty_list"),
+                                  app.font_small)
+        self.scan_button = Button((185, 385, 300, 75), "Scan me!", self._scan, app.font_medium)
+        self.again_button = Button((185, 385, 300, 75), "Again", self._reset, app.font_medium)
         self.back_button = Button((500, 385, 120, 75), "Back", lambda: app.change_state("menu"), app.font_medium)
         self._reset()
 
@@ -51,6 +57,8 @@ class NaughtyState(State):
         self.scan_until = None
         self.photo = None
         self.verdict = None
+        self.naughtiness = None
+        self.rank = None
         self.error = None
 
     @property
@@ -65,7 +73,7 @@ class NaughtyState(State):
         if self.phase == "scanning":
             return []
         main = self.scan_button if self.phase == "ready" else self.again_button
-        return [main, self.back_button]
+        return [self.list_button, main, self.back_button]
 
     def on_exit(self):
         self.app.camera.cancel()
@@ -89,14 +97,21 @@ class NaughtyState(State):
         path, error = self.app.camera.capture()
         word, color, _, lines = random.choices(VERDICTS, weights=[v[2] for v in VERDICTS])[0]
         self.verdict = (word, color, random.choice(lines))
+        self.naughtiness = random.randint(*NAUGHTINESS[word])
+        speech = f"{word.rstrip('!').lower()}. {self.naughtiness} percent naughty. {self.verdict[2]}"
         if error:
             self.error = error
         else:
             # Saved over the plain photo, so Photos shows the themed one.
-            theme_photo(path, word, self.verdict[2])
+            theme_photo(path, word, self.verdict[2], self.naughtiness)
             self.photo = load_for_screen(path, PHOTO_BOX)
+            if word == "NAUGHTY!":
+                naughty_list.add(path, self.naughtiness)
+                self.rank = naughty_list.rank_of(path)
+                if self.rank == 1:
+                    speech += " You are top of the naughty list!"
         self.phase = "result"
-        self.app.audio.speak(f"{word.rstrip('!').lower()}. {self.verdict[2]}")
+        self.app.audio.speak(speech)
 
     def draw(self, surface, checking=False):
         if self.phase == "result":
@@ -146,5 +161,9 @@ class NaughtyState(State):
             draw_text(surface, self.error or "No photo", self.app.font_tiny, box.centerx, box.y + 120,
                       box.width - 20)
         text_x = (box.right + config.SCREEN_W) // 2
-        y = draw_text(surface, word, self.app.font_title, text_x, 90, 320, color)
-        draw_text(surface, line, self.app.font_medium, text_x, y + 20, 320)
+        y = draw_text(surface, word, self.app.font_title, text_x, 60, 320, color)
+        y = draw_text(surface, f"{self.naughtiness}% naughty", self.app.font_small, text_x, y + 4, 320)
+        if self.rank is not None:
+            rank_text = "Top of the Naughty List!" if self.rank == 1 else f"Number {self.rank} on the Naughty List"
+            y = draw_text(surface, rank_text, self.app.font_small, text_x, y + 4, 320, color)
+        draw_text(surface, line, self.app.font_medium, text_x, y + 16, 320)

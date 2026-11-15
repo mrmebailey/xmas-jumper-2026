@@ -67,7 +67,7 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 ## Layout
 
 - `jukebox/main.py` — app entry point, state machine, main loop
-- `jukebox/states/` — Menu, Jokes, Music, Songs (pick a song), Camera, Photos, Games (picker) and Naughty or Nice screens
+- `jukebox/states/` — Menu, Jokes, Music, Songs (pick a song), Camera, Photos, Games (picker), Naughty or Nice and the Naughty List (naughtiest scans ranked, saved in `~/.local/share/jukebox/naughty_list.json`) screens
 - `jukebox/games/` — Reindeer Snake, Present Catch, Bauble Pop, Memory Match, their shared base and the shape-drawn Christmas sprites; best scores saved in `~/.local/share/jukebox/scores.json`
 - `jukebox/audio.py` — music playback (shuffle, moves on when a song ends) + text-to-speech + volume
 - `jukebox/art.py` — album covers from the MP3s' tags, shrunk once and cached in `~/.cache/jukebox/art`
