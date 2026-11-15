@@ -81,9 +81,11 @@ class AudioManager:
         """Apply the latest requested volume without blocking. Dragging the slider
         asks many times a second; only one volume command runs at a time and the
         newest value wins. Called every frame."""
+        if self._volume_proc is not None:
+            if self._volume_proc.poll() is None:
+                return
+            self._volume_proc = None  # finished; don't leave it as a zombie
         if self._pending_volume is None:
-            return
-        if self._volume_proc is not None and self._volume_proc.poll() is None:
             return
         percent, self._pending_volume = self._pending_volume, None
         if self._use_wpctl:

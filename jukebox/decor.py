@@ -33,9 +33,16 @@ class Snow:
             pygame.draw.circle(surface, config.SNOW_COLOR, (int(x), int(y)), radius)
 
 
-def draw_lights(surface):
-    """A string of fairy lights along the top edge that twinkle once a second."""
-    phase = pygame.time.get_ticks() // 1000
+_lights_phase = 0
+
+
+def draw_lights(surface, twinkle=True):
+    """A string of fairy lights along the top edge that twinkle once a second
+    (held still with twinkle=False, so a quiet screen doesn't change at all)."""
+    global _lights_phase
+    if twinkle:
+        _lights_phase = pygame.time.get_ticks() // 1000
+    phase = _lights_phase
     spacing = 40
     pygame.draw.line(surface, config.LIGHTS_WIRE_COLOR, (0, 10), (config.SCREEN_W, 10), 2)
     for i, x in enumerate(range(spacing // 2, config.SCREEN_W, spacing)):

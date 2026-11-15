@@ -71,7 +71,9 @@ class App:
         self.current_state = None
         self.change_state("menu")
         self.running = True
+        self.low_power = False
         self._last_input = 0
+        self._last_frame = None  # what's on screen, while in low power
         if PROFILE:
             _log(f"display info: {pygame.display.Info()}")
 
@@ -124,12 +126,23 @@ class App:
             self.audio.poll_volume()
             self.audio.poll_speak()
             t2 = time.monotonic()
-            low_power = self._low_power()
+            low_power = self.low_power = self._low_power()
             self.snow.update(moving=not low_power)
             self.current_state.update()
             self.current_state.draw(self.screen)
             t3 = time.monotonic()
-            pygame.display.flip()
+            if low_power:
+                # Putting a frame on screen costs Xorg and the display driver
+                # ~100ms of CPU that the music needs, and while music plays the
+                # screen is usually still (snow and lights stop), so only send
+                # frames that changed.
+                frame = self.screen.get_buffer().raw
+                if frame != self._last_frame:
+                    pygame.display.flip()
+                self._last_frame = frame
+            else:
+                self._last_frame = None
+                pygame.display.flip()
             t4 = time.monotonic()
             if PROFILE and (t4 - t0) * 1000 > SLOW_FRAME_MS:
                 _log(
