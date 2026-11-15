@@ -95,6 +95,9 @@ PHOTO_COUNTDOWN_SECONDS = 3
 PHOTO_PREVIEW_MS = 3000
 # True crops the photo to fill the screen; False shows the whole photo.
 PHOTO_PREVIEW_FILL = False
+# The Off button on the main menu tries these in turn: the desktop user is
+# normally allowed to power off; sudo is the fallback (never asks for a password).
+SHUTDOWN_CMDS = [["systemctl", "poweroff"], ["sudo", "-n", "poweroff"]]
 DELETE_CONFIRM_MS = 3000  # how long the "Sure?" delete confirmation waits for a second tap  # how long a new photo is shown before returning to the camera screen
 # Degrees anticlockwise to turn the photo for display (add 180 if it comes out upside down).
 PHOTO_ROTATION = -90
