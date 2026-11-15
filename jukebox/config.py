@@ -55,13 +55,20 @@ ALSA_CARD = None  # set to a card index/name if "amixer sset Master" needs -c <c
 
 # Tried in order; whichever is found on PATH first is used to capture a photo.
 CAMERA_CMDS = ["rpicam-still", "libcamera-still", "raspistill"]
-# 1296x972 is the ov5647's binned mode: the full field of view (larger sizes
-# like 1920x1080 crop in) with a quarter of the pixels, so it captures, encodes
-# and loads much faster on the Pi Zero. No EXIF thumbnail and fast colour
-# denoise skip the slowest software steps.
-# Note --denoise is rpicam/libcamera-still only; drop it if using raspistill.
-CAMERA_ARGS = ["--width", "1296", "--height", "972", "-q", "85",
-               "--thumb", "none", "--denoise", "cdn_fast"]
+# Photos are a quick snapshot for the small screen, not a keepsake: the camera
+# is sewn into a jumper and moves, so sharpness matters more than detail.
+# 640x480 is the sensor's fastest full-view mode and still more than the
+# screen shows (the photo is turned on its side, so it's shown 360x480).
+# A short fixed shutter freezes movement ("sports mode"); the camera turns the
+# gain up to make up the light, so indoor photos are a bit grainier.
+# 10000us (1/100s) also lines up with UK mains lighting so there's no banding;
+# try 5000 if it's still blurry, or 20000 if it's too dark.
+CAMERA_SHUTTER_US = 10000
+# No EXIF thumbnail and no colour denoise skip the slowest software steps.
+# Note these are rpicam/libcamera-still options; raspistill's flags differ.
+CAMERA_ARGS = ["--width", "640", "--height", "480", "-q", "75",
+               "--shutter", str(CAMERA_SHUTTER_US),
+               "--thumb", "none", "--denoise", "cdn_off"]
 # Extra options for the camera warmed up during the countdown. --zsl (zero
 # shutter lag) runs the viewfinder at the photo size, so the shot is taken from
 # a frame already captured instead of stopping and restarting the sensor in
@@ -70,6 +77,9 @@ CAMERA_ARGS = ["--width", "1296", "--height", "972", "-q", "85",
 CAMERA_WARM_ARGS = ["--zsl"]
 # Exposure settling time when the camera wasn't warmed up during the countdown.
 CAMERA_SETTLE_MS = 500
+# Each photo adds a line here saying how it was taken and how long it took
+# (and why, if the warmed-up camera failed), to see what's slow on the Pi.
+CAMERA_LOG = Path(tempfile.gettempdir()) / "jukebox-camera.log"
 PHOTO_COUNTDOWN_SECONDS = 3
 PHOTO_PREVIEW_MS = 3000
 # True crops the photo to fill the screen; False shows the whole photo.
