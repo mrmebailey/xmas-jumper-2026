@@ -31,7 +31,10 @@ class MenuState(State):
         for i, (label, state) in enumerate(cells):
             x, y = 20 + (i % 3) * 205, 85 + (i // 3) * 140
             self.buttons.append(Button((x, y, 190, 125), label, lambda s=state: go(s), app.font_large))
-        self.off_button = Button((545, 415, 85, 50), "Off", self._off, app.font_tiny)
+        # Small to look at, but it takes touches right out to the screen's corner:
+        # 50px is only ~6mm on this screen, and the panel's edges are the least accurate.
+        self.off_button = Button((535, 405, 95, 60), "Off", self._off, app.font_small,
+                                 touch_rect=(515, 395, config.SCREEN_W - 515, config.SCREEN_H - 395))
         self.buttons.append(self.off_button)
         self.confirm_until = None
         self.status = None

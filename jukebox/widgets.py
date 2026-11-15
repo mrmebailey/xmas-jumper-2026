@@ -101,8 +101,11 @@ class Button:
     callback is held back by BUTTON_FIRE_DELAY_MS so the bounce is seen
     before the screen changes."""
 
-    def __init__(self, rect, label, callback, font):
+    def __init__(self, rect, label, callback, font, touch_rect=None):
         self.rect = pygame.Rect(rect)
+        # Where a touch counts: a small button can take touches from a bigger
+        # area around it, so a fingertip doesn't have to land exactly on it.
+        self.touch_rect = pygame.Rect(touch_rect) if touch_rect else self.rect
         self.label = label
         self.callback = callback
         self.font = font
@@ -110,10 +113,10 @@ class Button:
         self._released_at = None
 
     def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
+        if event.type == pygame.MOUSEBUTTONDOWN and self.touch_rect.collidepoint(event.pos):
             self._pressed = True
         elif event.type == pygame.MOUSEBUTTONUP:
-            if self._pressed and self.rect.collidepoint(event.pos):
+            if self._pressed and self.touch_rect.collidepoint(event.pos):
                 self._released_at = pygame.time.get_ticks()
                 _pending.append((self._released_at + config.BUTTON_FIRE_DELAY_MS, self.callback))
             self._pressed = False
