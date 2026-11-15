@@ -26,6 +26,7 @@ class CameraManager:
         self._proc = None
         self._path = None
         self._log = None
+        self._closing = None  # a finished camera still shutting down
 
     @staticmethod
     def _new_path():
@@ -38,19 +39,40 @@ class CameraManager:
         self._path = self._new_path()
         self._log = tempfile.TemporaryFile()
         self._proc = subprocess.Popen(
-            [self.cmd, "-n", "-t", "0", "--signal", "-o", str(self._path), *config.CAMERA_ARGS],
+            [self.cmd, "-n", "-t", "0", "--signal", "-o", str(self._path),
+             *config.CAMERA_ARGS, *config.CAMERA_WARM_ARGS],
             stdout=subprocess.DEVNULL,
             stderr=self._log,
         )
 
     def cancel(self):
+        self._stop(wait=True)
+        if self._closing is not None:
+            # The camera can only be opened once, so the last one must be gone.
+            self._closing.wait()
+            self._closing = None
+
+    def _stop(self, wait):
         if self._proc is not None and self._proc.poll() is None:
             self._proc.terminate()
-            self._proc.wait()
+            if wait:
+                self._proc.wait()
+            else:
+                self._closing = self._proc
         self._proc = None
         if self._log is not None:
             self._log.close()
             self._log = None
+
+    @staticmethod
+    def _jpeg_done(path):
+        """True once the file ends with the JPEG end-of-image marker."""
+        try:
+            with open(path, "rb") as f:
+                f.seek(-2, 2)
+                return f.read(2) == b"\xff\xd9"
+        except OSError:  # missing, or not 2 bytes yet
+            return False
 
     def capture(self):
         """Take a photo, returning (path, None) or (None, error message)."""
@@ -64,25 +86,23 @@ class CameraManager:
         path = self._path
         self._proc.send_signal(signal.SIGUSR1)
         # In signal mode the tool keeps running for the next photo, so wait for the
-        # file to finish writing (size stops changing), then stop it.
+        # JPEG to finish writing, then stop it.
         deadline = time.monotonic() + 10
-        last_size = -1
         while time.monotonic() < deadline:
-            time.sleep(0.15)
-            size = path.stat().st_size if path.exists() else 0
-            if size > 0 and size == last_size:
+            time.sleep(0.03)
+            if self._jpeg_done(path):
                 break
             if self._proc.poll() is not None:
-                if size > 0:
+                if self._jpeg_done(path):
                     break
                 # Died without a photo (e.g. signalled before it was ready).
                 self.cancel()
                 return self._one_shot()
-            last_size = size
         else:
             self.cancel()
             return None, "Camera took too long - try again"
-        self.cancel()
+        # Don't hold up showing the photo while the camera shuts down.
+        self._stop(wait=False)
         return path, None
 
     def _one_shot(self):

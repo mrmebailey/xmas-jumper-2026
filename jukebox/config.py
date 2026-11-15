@@ -56,6 +56,12 @@ CAMERA_CMDS = ["rpicam-still", "libcamera-still", "raspistill"]
 # Note --denoise is rpicam/libcamera-still only; drop it if using raspistill.
 CAMERA_ARGS = ["--width", "1296", "--height", "972", "-q", "85",
                "--thumb", "none", "--denoise", "cdn_fast"]
+# Extra options for the camera warmed up during the countdown. --zsl (zero
+# shutter lag) runs the viewfinder at the photo size, so the shot is taken from
+# a frame already captured instead of stopping and restarting the sensor in
+# still mode. If the tool doesn't know an option the warm camera dies and the
+# one-shot fallback (which doesn't use these) takes the photo instead.
+CAMERA_WARM_ARGS = ["--zsl"]
 # Exposure settling time when the camera wasn't warmed up during the countdown.
 CAMERA_SETTLE_MS = 500
 PHOTO_COUNTDOWN_SECONDS = 3
