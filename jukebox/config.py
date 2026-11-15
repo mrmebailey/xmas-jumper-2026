@@ -48,6 +48,13 @@ FONT_SIZE_TITLE = 64
 FONT_SIZE_LARGE = 52
 FONT_SIZE_MEDIUM = 42
 FONT_SIZE_SMALL = 34
+FONT_SIZE_TINY = 28
+
+# Play songs in a random order (the Shuffle button on the music screen toggles it).
+SHUFFLE = True
+# Album art is taken from each MP3 and kept here, already shrunk, so the Pi
+# only has to decode each cover once.
+ART_CACHE_DIR = Path.home() / ".cache" / "jukebox" / "art"
 
 ESPEAK_CMD = "espeak-ng"
 SPEECH_WAV = Path(tempfile.gettempdir()) / "jukebox-joke.wav"  # each joke is rendered here, then played

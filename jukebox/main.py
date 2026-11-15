@@ -16,6 +16,7 @@ from .states.photos import PhotosState
 from .states.jokes import JokesState
 from .states.menu import MenuState
 from .states.music import MusicState
+from .states.songs import SongsState
 
 
 # Set JUKEBOX_PROFILE=1 to log input arrival and slow frames to stderr.
@@ -52,6 +53,7 @@ class App:
         self.font_large = pygame.font.Font(None, config.FONT_SIZE_LARGE)
         self.font_medium = pygame.font.Font(None, config.FONT_SIZE_MEDIUM)
         self.font_small = pygame.font.Font(None, config.FONT_SIZE_SMALL)
+        self.font_tiny = pygame.font.Font(None, config.FONT_SIZE_TINY)
 
         self.jokes = parse_jokes(config.JOKES_FILE)
         playlist = load_playlist(config.MUSIC_DIR)
@@ -65,6 +67,7 @@ class App:
             "menu": MenuState(self),
             "jokes": JokesState(self),
             "music": MusicState(self),
+            "songs": SongsState(self),
             "camera": CameraState(self),
             "photos": PhotosState(self),
         }
@@ -125,6 +128,7 @@ class App:
             run_pending_callbacks()
             self.audio.poll_volume()
             self.audio.poll_speak()
+            self.audio.poll_music()
             t2 = time.monotonic()
             low_power = self.low_power = self._low_power()
             self.snow.update(moving=not low_power)

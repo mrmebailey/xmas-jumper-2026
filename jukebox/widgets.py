@@ -10,6 +10,7 @@ from . import config
 _TEXT_CACHE_LIMIT = 200
 _rendered = {}
 _wrapped = {}
+_fitted = {}
 
 
 def render_text(font, text, color=config.TEXT_COLOR):
@@ -21,6 +22,22 @@ def render_text(font, text, color=config.TEXT_COLOR):
             _rendered.clear()
         surface = _rendered[key] = font.render(text, True, color)
     return surface
+
+
+def fit_text(font, text, max_width, color=config.TEXT_COLOR):
+    """Render one line, cut short with "..." if it's wider than max_width."""
+    key = (font, text, max_width)
+    fitted = _fitted.get(key)
+    if fitted is None:
+        fitted = text
+        if font.size(text)[0] > max_width:
+            while fitted and font.size(fitted + "...")[0] > max_width:
+                fitted = fitted[:-1]
+            fitted = fitted.rstrip() + "..."
+        if len(_fitted) >= _TEXT_CACHE_LIMIT:
+            _fitted.clear()
+        _fitted[key] = fitted
+    return render_text(font, fitted, color)
 
 
 def wrap_lines(text, font, max_width):

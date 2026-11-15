@@ -67,8 +67,9 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 ## Layout
 
 - `jukebox/main.py` — app entry point, state machine, main loop
-- `jukebox/states/` — Menu, Jokes, Music, Camera screens
-- `jukebox/audio.py` — music playback + text-to-speech + volume
+- `jukebox/states/` — Menu, Jokes, Music, Songs (pick a song), Camera, Photos screens
+- `jukebox/audio.py` — music playback (shuffle, moves on when a song ends) + text-to-speech + volume
+- `jukebox/art.py` — album covers from the MP3s' tags, shrunk once and cached in `~/.cache/jukebox/art`
 - `jukebox/camera.py` — shells out to the camera CLI tool, saves to `photos/`
 - `jukebox/jokes_loader.py`, `jukebox/music_loader.py` — parse `jokes.txt` / scan `music/`
 - `refresh.sh` — `git pull` and restart the running jukebox without a reboot

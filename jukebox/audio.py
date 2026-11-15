@@ -1,3 +1,4 @@
+import random
 import shutil
 import subprocess
 
@@ -11,6 +12,13 @@ class AudioManager:
         self.playlist = playlist
         self.track_index = 0
         self.playing = False
+        self._paused = False  # a track is loaded and paused (get_busy() is False then)
+        self.shuffle = config.SHUFFLE
+        self._order = []  # playlist indexes in play order
+        self._position = 0  # where track_index is in _order
+        if self.shuffle and self.playlist:
+            self.track_index = random.randrange(len(self.playlist))  # start somewhere new
+        self._set_order()
         self._speak_proc = None
         self._speech_sound = None
         self._speech_channel = None
@@ -23,15 +31,41 @@ class AudioManager:
         pygame.mixer.init()
 
     @property
-    def current_track_name(self):
-        if not self.playlist:
-            return "No music found"
-        return self.playlist[self.track_index][0]
+    def current_track(self):
+        return self.playlist[self.track_index] if self.playlist else None
 
-    def _load_current(self):
+    def _set_order(self):
+        """Play order from the current track on: shuffled, or album order."""
+        order = list(range(len(self.playlist)))
+        if self.shuffle:
+            random.shuffle(order)
+            if self.playlist:
+                # Start from the current track so the song playing carries on.
+                order.remove(self.track_index)
+                order.insert(0, self.track_index)
+        self._order = order
+        self._position = order.index(self.track_index) if self.playlist else 0
+
+    def toggle_shuffle(self):
+        self.shuffle = not self.shuffle
+        self._set_order()
+
+    def _play(self, index):
+        self.track_index = index
+        pygame.mixer.music.load(self.playlist[index].path)
+        pygame.mixer.music.play()
+        self.playing = True
+        self._paused = False
+
+    def play_track(self, index):
+        """Play a song picked from the list; the play order carries on from it."""
         if not self.playlist:
             return
-        pygame.mixer.music.load(self.playlist[self.track_index][1])
+        self._play(index)
+        if self.shuffle:
+            self._set_order()
+        else:
+            self._position = index
 
     def play_pause(self):
         if not self.playlist:
@@ -39,33 +73,44 @@ class AudioManager:
         if self.playing:
             pygame.mixer.music.pause()
             self.playing = False
-        elif pygame.mixer.music.get_busy():
+            self._paused = True
+        elif self._paused:
             pygame.mixer.music.unpause()
             self.playing = True
+            self._paused = False
         else:
-            self._load_current()
-            pygame.mixer.music.play()
-            self.playing = True
+            self._play(self.track_index)
+
+    def _step(self, delta):
+        if not self.playlist:
+            return
+        self._position += delta
+        if self.shuffle and self._position >= len(self._order):
+            # Been through every song: shuffle again, without repeating the last one first.
+            last = self._order[-1]
+            random.shuffle(self._order)
+            if len(self._order) > 1 and self._order[0] == last:
+                self._order.append(self._order.pop(0))
+            self._position = 0
+        self._position %= len(self._order)
+        self._play(self._order[self._position])
 
     def next_track(self):
-        if not self.playlist:
-            return
-        self.track_index = (self.track_index + 1) % len(self.playlist)
-        self._load_current()
-        pygame.mixer.music.play()
-        self.playing = True
+        self._step(1)
 
     def prev_track(self):
-        if not self.playlist:
-            return
-        self.track_index = (self.track_index - 1) % len(self.playlist)
-        self._load_current()
-        pygame.mixer.music.play()
-        self.playing = True
+        self._step(-1)
 
     def stop(self):
         pygame.mixer.music.stop()
         self.playing = False
+        self._paused = False
+
+    def poll_music(self):
+        """Move on to the next song when one finishes. Called every frame."""
+        if (self.playing and not self.speaking and not self._music_was_playing_before_speak
+                and not pygame.mixer.music.get_busy()):
+            self.next_track()
 
     def set_volume(self, percent):
         percent = max(0, min(100, int(percent)))
