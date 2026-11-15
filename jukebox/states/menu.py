@@ -45,13 +45,23 @@ class MenuState(State):
         self._reset_confirm()
         self.app.audio.stop()
         self._show_message("Shutting down...", "Wait for the green light to stop before unplugging.")
+        errors = []
         for cmd in config.SHUTDOWN_CMDS:
             try:
-                if subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
-                    return
-            except OSError:
-                pass
-        self.status = "Couldn't shut down"
+                result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=15)
+            except (OSError, subprocess.TimeoutExpired) as e:
+                errors.append(f"{' '.join(cmd)}: {e}")
+                continue
+            if result.returncode == 0:
+                return
+            errors.append(f"{' '.join(cmd)}: exit {result.returncode}: "
+                          f"{result.stderr.decode(errors='replace').strip()}")
+        try:
+            with open(config.SHUTDOWN_LOG, "a") as f:
+                f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S}\n" + "\n".join(errors) + "\n")
+        except OSError:
+            pass
+        self.status = f"Couldn't shut down: {errors[0][:120] if errors else 'no command'}"
 
     def _show_message(self, headline, detail):
         surface = self.app.screen
@@ -86,4 +96,4 @@ class MenuState(State):
             pygame.draw.rect(surface, config.TITLE_COLOR, self.off_button.rect.inflate(8, 8), width=4,
                              border_radius=14)
         if self.status:
-            draw_text(surface, self.status, self.app.font_tiny, 90, 440, 170, (255, 120, 120))
+            draw_text(surface, self.status, self.app.font_tiny, 270, 428, 520, (255, 120, 120))
