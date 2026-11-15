@@ -52,6 +52,11 @@ class CameraManager:
             self._closing.wait()
             self._closing = None
 
+    def reap(self):
+        """Clear away the last camera once it has shut down. Called every frame."""
+        if self._closing is not None and self._closing.poll() is not None:
+            self._closing = None
+
     def _stop(self, wait):
         if self._proc is not None and self._proc.poll() is None:
             self._proc.terminate()

@@ -5,8 +5,36 @@ import pygame
 from . import config
 
 
+# Rendering text is one of the slowest things drawn each frame on the Pi Zero,
+# and the same few strings are drawn every frame, so keep the results.
+_TEXT_CACHE_LIMIT = 200
+_rendered = {}
+_wrapped = {}
+
+
+def render_text(font, text, color=config.TEXT_COLOR):
+    """font.render(text, True, color), remembered between frames."""
+    key = (font, text, color)
+    surface = _rendered.get(key)
+    if surface is None:
+        if len(_rendered) >= _TEXT_CACHE_LIMIT:
+            _rendered.clear()
+        surface = _rendered[key] = font.render(text, True, color)
+    return surface
+
+
 def wrap_lines(text, font, max_width):
     """Split text into lines that each render no wider than max_width."""
+    key = (font, text, max_width)
+    lines = _wrapped.get(key)
+    if lines is None:
+        if len(_wrapped) >= _TEXT_CACHE_LIMIT:
+            _wrapped.clear()
+        lines = _wrapped[key] = _wrap_lines(text, font, max_width)
+    return lines
+
+
+def _wrap_lines(text, font, max_width):
     lines, line = [], ""
     for word in text.split():
         candidate = f"{line} {word}".strip()
@@ -24,7 +52,7 @@ def draw_text(surface, text, font, center_x, top, max_width, color=config.TEXT_C
     """Draw text wrapped and centred, returning the y just below the last line."""
     y = top
     for line in wrap_lines(text, font, max_width):
-        rendered = font.render(line, True, color)
+        rendered = render_text(font, line, color)
         surface.blit(rendered, rendered.get_rect(midtop=(center_x, y)))
         y += font.get_linesize()
     return y
@@ -92,7 +120,7 @@ class Button:
         color = config.BUTTON_ACTIVE_COLOR if lit else config.BUTTON_COLOR
         pygame.draw.rect(surface, color, rect, border_radius=12)
         pygame.draw.rect(surface, config.BUTTON_BORDER_COLOR, rect, width=3, border_radius=12)
-        text = self.font.render(self.label, True, config.TEXT_COLOR)
+        text = render_text(self.font, self.label)
         surface.blit(text, text.get_rect(center=rect.center))
 
 

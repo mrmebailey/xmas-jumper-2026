@@ -2,7 +2,7 @@ import pygame
 
 from .. import config
 from ..photos import list_photos, load_for_screen
-from ..widgets import Button, draw_text
+from ..widgets import Button, draw_text, render_text
 from .base import State
 
 SWIPE_PX = 80
@@ -82,7 +82,7 @@ class PhotosState(State):
             return
         self.draw_background(surface)
         surface.blit(self.image, self.image.get_rect(center=(config.SCREEN_W // 2, config.SCREEN_H // 2)))
-        counter = self.app.font_small.render(f"{self.index + 1}/{len(self.photos)}", True, config.TEXT_COLOR)
+        counter = render_text(self.app.font_small, f"{self.index + 1}/{len(self.photos)}")
         surface.blit(counter, counter.get_rect(center=(70, 80)))
         for button in self.buttons:
             button.draw(surface)

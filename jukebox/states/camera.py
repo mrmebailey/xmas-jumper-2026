@@ -2,7 +2,7 @@ import pygame
 
 from .. import config
 from ..photos import load_for_screen
-from ..widgets import Button, draw_text
+from ..widgets import Button, draw_text, render_text
 from .base import State
 
 
@@ -49,6 +49,7 @@ class CameraState(State):
             button.handle_event(event)
 
     def update(self):
+        self.app.camera.reap()
         if self.countdown_until is not None and pygame.time.get_ticks() >= self.countdown_until:
             self.countdown_until = None
             self._capture()
@@ -74,5 +75,5 @@ class CameraState(State):
 
     def _draw_big(self, surface, text, font):
         self.draw_background(surface)
-        rendered = font.render(text, True, config.TITLE_COLOR)
+        rendered = render_text(font, text, config.TITLE_COLOR)
         surface.blit(rendered, rendered.get_rect(center=(config.SCREEN_W // 2, config.SCREEN_H // 2)))

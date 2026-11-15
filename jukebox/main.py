@@ -83,6 +83,16 @@ class App:
             return False
         return pygame.time.get_ticks() - self._last_input > config.LOW_POWER_AFTER_INPUT_MS
 
+    def _frame_ms(self, low_power):
+        """How long to wait for the next frame when slowed down, or None for full speed."""
+        if low_power:
+            return config.LOW_POWER_FRAME_MS
+        if has_pending_callbacks():
+            return None
+        if pygame.time.get_ticks() - self._last_input > config.IDLE_AFTER_INPUT_MS:
+            return 1000 // config.IDLE_FPS
+        return None
+
     def change_state(self, name):
         # Drop taps still waiting to fire on the screen being left.
         clear_pending_callbacks()
@@ -127,10 +137,11 @@ class App:
                     f"handle={(t2 - t1) * 1000:.0f} ({len(events)} events) "
                     f"draw={(t3 - t2) * 1000:.0f} flip={(t4 - t3) * 1000:.0f}"
                 )
-            if low_power:
+            frame_ms = self._frame_ms(low_power)
+            if frame_ms:
                 # Sleep until the next slow frame, but wake at once for a touch:
                 # put it back for the next pygame.event.get() to handle.
-                event = pygame.event.wait(config.LOW_POWER_FRAME_MS)
+                event = pygame.event.wait(max(1, frame_ms - int((time.monotonic() - t0) * 1000)))
                 if event.type != pygame.NOEVENT:
                     pygame.event.post(event)
                 self.clock.tick()

@@ -1,5 +1,5 @@
 from .. import config
-from ..widgets import Button, Slider, draw_text
+from ..widgets import Button, Slider, draw_text, render_text
 from .base import State
 
 
@@ -32,9 +32,7 @@ class MusicState(State):
         draw_text(surface, self.app.audio.current_track_name, self.app.font_medium, config.SCREEN_W // 2, 110,
                   config.SCREEN_W - 60)
 
-        volume_label = self.app.font_small.render(
-            f"Volume: {int(self.slider.value)}%", True, config.TEXT_COLOR
-        )
+        volume_label = render_text(self.app.font_small, f"Volume: {int(self.slider.value)}%")
         surface.blit(volume_label, (40, 258))
         self.slider.draw(surface)
 

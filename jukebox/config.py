@@ -15,6 +15,12 @@ SCREEN_W, SCREEN_H = 640, 480
 FPS = 12
 LOW_POWER_FRAME_MS = 500
 LOW_POWER_AFTER_INPUT_MS = 1500  # stay at full speed this long after a touch
+# Every frame is pushed whole to the screen, which is what keeps Xorg and the
+# kernel busy, so when nobody has touched the screen for IDLE_AFTER_INPUT_MS
+# (long enough to cover the photo countdown) redraw at IDLE_FPS instead. The
+# snow keeps falling at the same speed, just in bigger steps.
+IDLE_FPS = 5
+IDLE_AFTER_INPUT_MS = 5000
 # Samples per audio chunk: bigger means fewer wake-ups (less CPU) for a little
 # more delay, which doesn't matter for music.
 AUDIO_BUFFER = 4096
