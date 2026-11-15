@@ -4,6 +4,10 @@ from ..widgets import draw_text
 
 
 class State:
+    # True while the screen is animating on its own (a game being played), so
+    # the main loop keeps drawing at full speed even when nobody touches it.
+    full_speed = False
+
     def __init__(self, app):
         self.app = app
 

@@ -67,7 +67,8 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 ## Layout
 
 - `jukebox/main.py` — app entry point, state machine, main loop
-- `jukebox/states/` — Menu, Jokes, Music, Songs (pick a song), Camera, Photos screens
+- `jukebox/states/` — Menu, Jokes, Music, Songs (pick a song), Camera, Photos, Games (picker) and Naughty or Nice screens
+- `jukebox/games/` — Reindeer Snake, Present Catch, Bauble Pop, Memory Match, their shared base and the shape-drawn Christmas sprites; best scores saved in `~/.local/share/jukebox/scores.json`
 - `jukebox/audio.py` — music playback (shuffle, moves on when a song ends) + text-to-speech + volume
 - `jukebox/art.py` — album covers from the MP3s' tags, shrunk once and cached in `~/.cache/jukebox/art`
 - `jukebox/camera.py` — shells out to the camera CLI tool, saves to `photos/`
@@ -77,4 +78,3 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 - `xinitrc` — X session for xinit: disables blanking, starts openbox, runs the jukebox in a restart loop
 - `run.sh` — launched by `xinitrc` (or the desktop autostart entry `setup.sh` creates); `cd`s to the repo and runs the app
 
-Games are a planned future addition — not implemented yet.

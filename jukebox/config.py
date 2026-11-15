@@ -56,6 +56,9 @@ SHUFFLE = True
 # only has to decode each cover once.
 ART_CACHE_DIR = Path.home() / ".cache" / "jukebox" / "art"
 
+# Best game scores, kept between restarts.
+SCORES_FILE = Path.home() / ".local" / "share" / "jukebox" / "scores.json"
+
 ESPEAK_CMD = "espeak-ng"
 SPEECH_WAV = Path(tempfile.gettempdir()) / "jukebox-joke.wav"  # each joke is rendered here, then played
 ALSA_CARD = None  # set to a card index/name if "amixer sset Master" needs -c <card>

@@ -21,12 +21,13 @@ def christmas_countdown(now):
 class MenuState(State):
     def on_enter(self):
         app = self.app
-        self.buttons = [
-            Button((30, 100, 280, 120), "Jokes", lambda: app.change_state("jokes"), app.font_large),
-            Button((330, 100, 280, 120), "Music", lambda: app.change_state("music"), app.font_large),
-            Button((30, 235, 280, 120), "Camera", lambda: app.change_state("camera"), app.font_large),
-            Button((330, 235, 280, 120), "Photos", lambda: app.change_state("photos"), app.font_large),
-        ]
+        go = app.change_state
+        cells = [("Jokes", "jokes"), ("Music", "music"), ("Games", "games"),
+                 ("Camera", "camera"), ("Photos", "photos"), ("Naughty\nor Nice", "naughty")]
+        self.buttons = []
+        for i, (label, state) in enumerate(cells):
+            x, y = 20 + (i % 3) * 205, 85 + (i // 3) * 140
+            self.buttons.append(Button((x, y, 190, 125), label, lambda s=state: go(s), app.font_large))
 
     def handle_event(self, event):
         for button in self.buttons:

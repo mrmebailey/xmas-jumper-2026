@@ -8,15 +8,18 @@ def list_photos():
     return sorted(config.PHOTOS_DIR.glob("photo_*.jpg"), reverse=True)
 
 
-def load_for_screen(path):
-    """Load a photo turned the right way up and sized for the screen."""
+def load_for_screen(path, box=None, fill=None):
+    """Load a photo turned the right way up and sized for the screen, or to
+    fit in box=(w, h). fill=True crops to cover the box instead."""
+    box_w, box_h = box or (config.SCREEN_W, config.SCREEN_H)
+    fill = config.PHOTO_PREVIEW_FILL if fill is None else fill
     image = pygame.image.load(str(path))
     w, h = image.get_size()
     # Scale to fit (or, with PHOTO_PREVIEW_FILL, to cover and crop) the screen
     # using the turned-round size, but scale before rotating: turning the
     # full-resolution photo is much slower on the Pi Zero.
     fit_w, fit_h = (h, w) if config.PHOTO_ROTATION % 180 else (w, h)
-    pick = max if config.PHOTO_PREVIEW_FILL else min
-    scale = pick(config.SCREEN_W / fit_w, config.SCREEN_H / fit_h)
+    pick = max if fill else min
+    scale = pick(box_w / fit_w, box_h / fit_h)
     image = pygame.transform.scale(image, (int(w * scale), int(h * scale)))
     return pygame.transform.rotate(image, config.PHOTO_ROTATION)

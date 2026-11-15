@@ -11,7 +11,13 @@ from .decor import Snow
 from .jokes_loader import parse_jokes
 from .music_loader import load_playlist
 from .widgets import clear_pending_callbacks, has_pending_callbacks, run_pending_callbacks
+from .games.baubles import BaublesState
+from .games.catch import CatchState
+from .games.memory import MemoryState
+from .games.snake import SnakeState
 from .states.camera import CameraState
+from .states.games import GamesState
+from .states.naughty import NaughtyState
 from .states.photos import PhotosState
 from .states.jokes import JokesState
 from .states.menu import MenuState
@@ -70,6 +76,12 @@ class App:
             "songs": SongsState(self),
             "camera": CameraState(self),
             "photos": PhotosState(self),
+            "games": GamesState(self),
+            "snake": SnakeState(self),
+            "catch": CatchState(self),
+            "baubles": BaublesState(self),
+            "memory": MemoryState(self),
+            "naughty": NaughtyState(self),
         }
         self.current_state = None
         self.change_state("menu")
@@ -82,6 +94,8 @@ class App:
 
     def _low_power(self):
         """True while audio is playing and the screen is left alone."""
+        if self.current_state.full_speed:
+            return False
         if not (self.audio.music_active or self.audio.speaking):
             return False
         if has_pending_callbacks():
@@ -92,7 +106,7 @@ class App:
         """How long to wait for the next frame when slowed down, or None for full speed."""
         if low_power:
             return config.LOW_POWER_FRAME_MS
-        if has_pending_callbacks():
+        if has_pending_callbacks() or self.current_state.full_speed:
             return None
         if pygame.time.get_ticks() - self._last_input > config.IDLE_AFTER_INPUT_MS:
             return 1000 // config.IDLE_FPS

@@ -137,8 +137,13 @@ class Button:
         color = config.BUTTON_ACTIVE_COLOR if lit else config.BUTTON_COLOR
         pygame.draw.rect(surface, color, rect, border_radius=12)
         pygame.draw.rect(surface, config.BUTTON_BORDER_COLOR, rect, width=3, border_radius=12)
-        text = render_text(self.font, self.label)
-        surface.blit(text, text.get_rect(center=rect.center))
+        # A label can be split over lines with "\n".
+        lines = self.label.split("\n")
+        line_h = self.font.get_linesize()
+        top = rect.centery - line_h * len(lines) // 2
+        for i, line in enumerate(lines):
+            text = render_text(self.font, line)
+            surface.blit(text, text.get_rect(center=(rect.centerx, top + line_h * i + line_h // 2)))
 
 
 class Slider:
