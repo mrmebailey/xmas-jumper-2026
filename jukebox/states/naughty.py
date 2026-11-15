@@ -4,6 +4,7 @@ import pygame
 
 from .. import config
 from ..games import sprites
+from ..naughty_theme import theme_photo
 from ..photos import load_for_screen
 from ..widgets import Button, draw_text, render_text
 from .base import State
@@ -91,6 +92,8 @@ class NaughtyState(State):
         if error:
             self.error = error
         else:
+            # Saved over the plain photo, so Photos shows the themed one.
+            theme_photo(path, word, self.verdict[2])
             self.photo = load_for_screen(path, PHOTO_BOX)
         self.phase = "result"
         self.app.audio.speak(f"{word.rstrip('!').lower()}. {self.verdict[2]}")
