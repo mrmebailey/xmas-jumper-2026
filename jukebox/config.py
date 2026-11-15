@@ -60,7 +60,17 @@ ART_CACHE_DIR = Path.home() / ".cache" / "jukebox" / "art"
 SCORES_FILE = Path.home() / ".local" / "share" / "jukebox" / "scores.json"
 
 ESPEAK_CMD = "espeak-ng"
-SPEECH_WAV = Path(tempfile.gettempdir()) / "jukebox-joke.wav"  # each joke is rendered here, then played
+# Father Christmas's voice (espeak-ng options): a deep male voice (-v ...+m3),
+# low pitch (-p, 0-99, normally 50), slow and steady (-s, words a minute,
+# normally 175) and loud (-a, 0-200, normally 100).
+SANTA_VOICE = ["-v", "en-gb+m3", "-p", "30", "-s", "140", "-a", "160"]
+# The punch line: deeper, slower and as loud as espeak goes.
+PUNCH_LINE_VOICE = ["-v", "en-gb+m3", "-p", "24", "-s", "125", "-a", "200"]
+# Silence between a joke's question and its punch line.
+JOKE_PAUSE_MS = 2500
+# Said after the punch line ("" for nothing).
+JOKE_LAUGH = "Ho ho ho!"
+SPEECH_WAV = Path(tempfile.gettempdir()) / "jukebox-joke.wav"  # speech is rendered to jukebox-joke-0.wav, -1, ... then played
 # When a speaker connects, wait this long (for PipeWire to finish setting it
 # up with its own saved volume) and then set it to the slider's volume.
 VOLUME_REAPPLY_MS = 2500

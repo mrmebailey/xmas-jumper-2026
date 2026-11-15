@@ -22,6 +22,11 @@ class AudioManager:
         self._speak_proc = None
         self._speech_sound = None
         self._speech_channel = None
+        self._parts = []
+        self._rendered = []
+        self._rendering_to = None
+        self._plain_retry = False
+        self.part_starts = None  # when each bit of the current speech starts (ticks)
         self._music_was_playing_before_speak = False
         # PipeWire's default output covers everything (music, spoken jokes, a
         # Bluetooth speaker); amixer only reaches a local ALSA card.
@@ -141,16 +146,40 @@ class AudioManager:
         self._volume_proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def speak(self, text):
-        """Speak a joke. espeak-ng renders it to a WAV first and pygame plays that:
-        synthesising live on the Pi Zero's busy CPU made the speech stutter,
-        whereas playing a finished file is as smooth as the music."""
+        """Say something in Father Christmas's voice."""
+        self.speak_parts([(text, config.SANTA_VOICE, 0)])
+
+    def speak_parts(self, parts):
+        """Say several bits one after another, each as (text, espeak options,
+        ms of silence before it), e.g. a joke's setup, then its punch line in a
+        bigger voice after a pause. part_started(i) says when bit i is heard.
+
+        espeak-ng renders each bit to a WAV first and pygame plays them joined
+        into one sound: synthesising live on the Pi Zero's busy CPU made the
+        speech stutter, whereas playing finished audio is as smooth as the music."""
         if not self.speaking:
             self._music_was_playing_before_speak = self.playing
             if self.playing:
                 pygame.mixer.music.pause()
         self._stop_speech()
+        self._parts = [part for part in parts if part[0].strip()]
+        self._rendered = []
+        self._plain_retry = False
+        self.part_starts = None
+        if self._parts:
+            self._render_next()
+
+    def _render_next(self):
+        text, options, _ = self._parts[len(self._rendered)]
+        if self._plain_retry and "-v" in options:
+            # This espeak didn't know the voice: use its default one, still
+            # with Santa's pitch, speed and loudness.
+            i = options.index("-v")
+            options = options[:i] + options[i + 2:]
+        path = config.SPEECH_WAV.with_name(f"{config.SPEECH_WAV.stem}-{len(self._rendered)}.wav")
+        self._rendering_to = path
         self._speak_proc = subprocess.Popen(
-            [config.ESPEAK_CMD, "-w", str(config.SPEECH_WAV), text],
+            [config.ESPEAK_CMD, *options, "-w", str(path), text],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
@@ -174,13 +203,45 @@ class AudioManager:
     def speaking(self):
         return self._speak_proc is not None or self._speech_channel is not None
 
+    def part_started(self, index):
+        """True once bit `index` of the speech has started being heard."""
+        return (self.part_starts is not None and index < len(self.part_starts)
+                and pygame.time.get_ticks() >= self.part_starts[index])
+
+    def _join_and_play(self):
+        """Join the rendered bits, with their pauses, into one sound and play it."""
+        frequency, size, channels = pygame.mixer.get_init()
+        frame_bytes = abs(size) // 8 * channels
+        chunks, starts, offset = [], [], 0
+        for (_, _, gap_ms), path in zip(self._parts, self._rendered):
+            gap = bytes(int(frequency * gap_ms / 1000) * frame_bytes)
+            chunks.append(gap)
+            offset += len(gap)
+            starts.append(offset)
+            raw = pygame.mixer.Sound(str(path)).get_raw()
+            chunks.append(raw)
+            offset += len(raw)
+        self._speech_sound = pygame.mixer.Sound(buffer=b"".join(chunks))
+        self._speech_channel = self._speech_sound.play()
+        now = pygame.time.get_ticks()
+        self.part_starts = [now + start * 1000 // (frequency * frame_bytes) for start in starts]
+
     def poll_speak(self):
         if self._speak_proc is not None and self._speak_proc.poll() is not None:
-            ok = self._speak_proc.returncode == 0
+            ok = self._speak_proc.returncode == 0 and self._rendering_to.exists()
             self._speak_proc = None
             if ok:
-                self._speech_sound = pygame.mixer.Sound(str(config.SPEECH_WAV))
-                self._speech_channel = self._speech_sound.play()
+                self._rendered.append(self._rendering_to)
+                if len(self._rendered) < len(self._parts):
+                    self._render_next()
+                else:
+                    try:
+                        self._join_and_play()
+                    except pygame.error:
+                        self._speech_channel = None
+            elif not self._plain_retry:
+                self._plain_retry = True
+                self._render_next()
         if self._speech_channel is not None and not self._speech_channel.get_busy():
             self._speech_channel = None
             self._speech_sound = None
