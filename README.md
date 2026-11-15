@@ -26,7 +26,7 @@ cd ~/xmas-jumper-2026
 sudo reboot
 ```
 
-`setup.sh` installs `python3-pygame`, `espeak-ng`, `alsa-utils`, a camera CLI tool (`rpicam-apps`/`libcamera-apps`), adds your user to the `video`/`audio` groups (camera/sound access), and writes `~/.config/autostart/jukebox.desktop` so the desktop session launches `run.sh` on login. It figures out the repo path itself (no hardcoded paths to edit).
+`setup.sh` installs `python3-pygame`, `espeak-ng`, `alsa-utils`, a camera CLI tool (`rpicam-apps`/`libcamera-apps`), adds your user to the `video`/`audio` groups (camera/sound access), turns off the serial login console on the GPIO pins (noise there kept its login prompt busy and made the music break up; Bluetooth is unaffected), and writes `~/.config/autostart/jukebox.desktop` so the desktop session launches `run.sh` on login. It figures out the repo path itself (no hardcoded paths to edit).
 
 To launch it immediately without logging out/in: `./run.sh`. Press `Esc` to quit back to the desktop.
 
