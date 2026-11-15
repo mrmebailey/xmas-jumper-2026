@@ -21,8 +21,6 @@ class CameraState(State):
 
     def _take_photo(self):
         self.countdown_until = pygame.time.get_ticks() + config.PHOTO_COUNTDOWN_SECONDS * 1000
-        # Start the camera now so its startup happens during the countdown.
-        self.app.camera.warm_up()
 
     def _capture(self):
         # Capturing blocks the main loop, so put the message on screen first.
@@ -49,7 +47,10 @@ class CameraState(State):
             button.handle_event(event)
 
     def update(self):
-        self.app.camera.reap()
+        if self.preview is None:
+            # The camera takes longer to start than the countdown, so have it
+            # running whenever this screen is open (and again after each photo).
+            self.app.camera.keep_warm()
         if self.countdown_until is not None and pygame.time.get_ticks() >= self.countdown_until:
             self.countdown_until = None
             self._capture()

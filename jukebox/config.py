@@ -69,12 +69,13 @@ CAMERA_SHUTTER_US = 10000
 CAMERA_ARGS = ["--width", "640", "--height", "480", "-q", "75",
                "--shutter", str(CAMERA_SHUTTER_US),
                "--thumb", "none", "--denoise", "cdn_off"]
-# Extra options for the camera warmed up during the countdown. --zsl (zero
+# Extra options for the camera kept running while the Camera screen is open. --zsl (zero
 # shutter lag) runs the viewfinder at the photo size, so the shot is taken from
 # a frame already captured instead of stopping and restarting the sensor in
 # still mode. If the tool doesn't know an option the warm camera dies and the
 # one-shot fallback (which doesn't use these) takes the photo instead.
-CAMERA_WARM_ARGS = ["--zsl"]
+# --framerate keeps the camera from using more CPU than it needs while it waits.
+CAMERA_WARM_ARGS = ["--zsl", "--framerate", "15"]
 # Exposure settling time when the camera wasn't warmed up during the countdown.
 CAMERA_SETTLE_MS = 500
 # Each photo adds a line here saying how it was taken and how long it took
