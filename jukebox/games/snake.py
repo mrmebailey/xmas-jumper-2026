@@ -45,12 +45,14 @@ class SnakeState(GameState):
         self.present_color = random.choice(PRESENT_COLORS)
 
     def _turn(self, direction):
+        # Any swipe starts the game; one that can't turn him (right, the way
+        # he's facing, or left, back into his team) just sets him off.
+        self.waiting = False
         last = self.turns[-1] if self.turns else self.direction
         if direction == last or direction == (-last[0], -last[1]):
             return  # same way, or straight back into the team
         if len(self.turns) < 2:
             self.turns.append(direction)
-        self.waiting = False
 
     def handle_game_event(self, event):
         if event.type == pygame.KEYDOWN and event.key in _KEYS:
