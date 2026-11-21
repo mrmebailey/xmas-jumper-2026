@@ -156,3 +156,14 @@ SYSINFO_REFRESH_MS = 3000
 # Shown at the bottom of the System Info screen, highlighted in red.
 FRONTIER_FINDINGS = "138 old libraries"
 WARNING_COLOR = (255, 80, 80)
+# 80s computer-style music looping while a game is played, made by
+# tools/make_game_music.py. Any jukebox song playing is paused meanwhile and
+# carries on afterwards. Set GAME_MUSIC_VOLUME to 0 for none.
+GAME_MUSIC_DIR = REPO_ROOT / "game_music"
+GAME_MUSIC = {
+    "snake": "jingle-bells.wav",
+    "catch": "we-wish-you.wav",
+    "baubles": "bauble-bop.wav",
+    "memory": "deck-the-halls.wav",
+}
+GAME_MUSIC_VOLUME = 0.6

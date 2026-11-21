@@ -84,6 +84,14 @@ python3 -m venv ~/.cache/jukebox/voice-venv
 
 Only new or changed jokes are recorded (under a minute for everything on a laptop), and recordings of removed jokes are deleted. To try other voices, `--samples <dir>` records a few jokes in each one to compare by ear; change `VOICE` or the effects in `STYLES` at the top of the script, then run it with `--force` to record everything again.
 
+### Game music
+
+While a game is played, 80s home-computer style music loops in `game_music/`: chiptune arrangements of Jingle Bells (Reindeer Snake), We Wish You a Merry Christmas (Present Catch), Deck the Halls (Memory Match) and an original tune (Bauble Pop). `tools/make_game_music.py` synthesises them from scratch like the old sound chips did (a square-wave lead, fast arpeggio chords, triangle bass and noise drums), so there's nothing to licence. Any jukebox song playing is paused during the game and carries on afterwards. Change which game gets which track, or the volume (`0` for none), with `GAME_MUSIC` / `GAME_MUSIC_VOLUME` in `jukebox/config.py`. To change the tunes, edit them in the script and re-run it on a laptop:
+
+```sh
+~/.cache/jukebox/voice-venv/bin/python tools/make_game_music.py
+```
+
 ### QR code
 
 `qr-code.png` is shown on the Info screen to be scanned. Replace it with your own (keep it 148x148 with 4px squares, or change `QR_CODE_SIZE` in `jukebox/config.py`).
@@ -108,6 +116,7 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 - `jukebox/sysinfo.py` — reads the System Info screen's details (CPU, memory, disk, speaker, Wi-Fi, SSH, power)
 - `jukebox/camera.py` — shells out to the camera CLI tool, saves to `photos/`
 - `jukebox/jokes_loader.py`, `jukebox/music_loader.py` — parse `jokes.txt` / scan `music/`
+- `tools/make_game_music.py` — makes the 80s-style game music in `game_music/`
 - `tools/make_santa_voice.py` — records the jokes into `jokes_audio/` in Santa's voice (run on a laptop)
 - `refresh.sh` — `git pull` and restart the running jukebox without a reboot
 - `bt-speaker.sh` — keeps the Bluetooth speaker in `~/.jukebox-speaker` connected (started by `xinitrc`)

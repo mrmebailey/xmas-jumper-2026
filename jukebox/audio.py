@@ -34,6 +34,9 @@ class AudioManager:
         self._use_wpctl = shutil.which("wpctl") is not None
         self._volume_proc = None
         self._pending_volume = None
+        self._game_sound = None  # (path, Sound) of the last game music loaded
+        self._game_channel = None
+        self._resume_after_game = False
         pygame.mixer.init()
 
     @property
@@ -145,6 +148,37 @@ class AudioManager:
             target = ["-c", str(config.ALSA_CARD)] if config.ALSA_CARD is not None else []
             cmd = ["amixer", *target, "sset", "Master", f"{percent}%"]
         self._volume_proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def play_game_music(self, path, volume=1.0):
+        """Loop a game's music on its own channel. A jukebox song that's
+        playing is paused until stop_game_music()."""
+        self.stop_game_music()
+        if volume <= 0 or not path.exists():
+            return
+        try:
+            if self._game_sound is None or self._game_sound[0] != path:
+                self._game_sound = (path, pygame.mixer.Sound(str(path)))
+        except pygame.error:
+            return
+        if self.playing:
+            pygame.mixer.music.pause()
+            self.playing = False
+            self._paused = True
+            self._resume_after_game = True
+        sound = self._game_sound[1]
+        sound.set_volume(volume)
+        self._game_channel = sound.play(loops=-1)
+
+    def stop_game_music(self):
+        if self._game_channel is not None:
+            self._game_channel.stop()
+            self._game_channel = None
+        if self._resume_after_game:
+            self._resume_after_game = False
+            if self._paused:
+                pygame.mixer.music.unpause()
+                self.playing = True
+                self._paused = False
 
     def speak(self, text):
         """Say something in Father Christmas's voice."""

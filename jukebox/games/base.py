@@ -9,7 +9,8 @@ PLAY_TOP = 64  # below the fairy lights and the score line
 
 class GameState(State):
     """Shared parts of every game: score and best score along the top, a Back
-    button, and a game-over panel offering another go. A game fills in
+    button, 80s-style music (config.GAME_MUSIC) and a game-over panel offering
+    another go. A game fills in
     reset(), step(dt_ms), draw_game(surface) and handle_game_event(event)."""
 
     name = ""  # key for the saved best score
@@ -25,6 +26,12 @@ class GameState(State):
             Button((350, 330, 150, 75), "Back", lambda: app.change_state("games"), app.font_medium),
         ]
         self.new_game()
+        track = config.GAME_MUSIC.get(self.name)
+        if track:
+            app.audio.play_game_music(config.GAME_MUSIC_DIR / track, config.GAME_MUSIC_VOLUME)
+
+    def on_exit(self):
+        self.app.audio.stop_game_music()
 
     @property
     def full_speed(self):
