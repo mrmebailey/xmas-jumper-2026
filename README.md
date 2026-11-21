@@ -1,34 +1,57 @@
 # Christmas Jukebox
 
-A touchscreen jukebox for a Raspberry Pi Zero W: pick **Jokes** (shown on screen and spoken aloud), **Music** (plays through `music/`), or **Camera** (snaps a photo with the spy cam) on a 2.8" capacitive touchscreen, through a USB speaker.
+A touchscreen jukebox sewn into a Christmas jumper, run by a Raspberry Pi Zero W on a 2.8" capacitive touchscreen. From the main menu: **Jokes** (Father Christmas reads them aloud), **Music** (plays `music/` through a Bluetooth speaker), **Games**, **Camera** and **Photos** (snap and browse photos with the spy cam), **Naughty or Nice** (with a Naughty List), plus **Info** (system status and a QR code) and **Off** in the bottom corners.
 
-## Hardware assumed
+## Hardware
 
-- Raspberry Pi Zero W, Raspberry Pi OS **Desktop** (not Lite) — the app runs as a fullscreen window on top of the desktop session, autologin to the desktop is expected to already be configured
-- 2.8" capacitive IPS touchscreen, 480x640 native panel, run in landscape (640x480)
-- USB speaker
-- Camera module ("spy cam"), used by the Camera menu option
+| Part | Notes |
+| --- | --- |
+| [Raspberry Pi Zero W](https://thepihut.com/products/raspberry-pi-zero-w) | One slow core and 512MB RAM, so the app is tuned to leave CPU for the audio. A [Zero 2 W](https://thepihut.com/products/raspberry-pi-zero-2) is a faster drop-in. Needs a soldered GPIO header for the screen. |
+| [2.8" Capacitive IPS LCD Touchscreen (480×640)](https://thepihut.com/products/2-8-capacitive-ips-lcd-touchscreen-for-raspberry-pi-480x640) | Waveshare, plugs onto the GPIO header (DPI display, I2C touch). Portrait natively; run in landscape (640x480). |
+| [Zero Spy Camera for Raspberry Pi Zero](https://thepihut.com/products/zero-spy-camera-for-raspberry-pi-zero) | Tiny 5MP camera on the Zero's camera connector. Now discontinued; a [ZeroCam](https://thepihut.com/products/zerocam-camera-for-raspberry-pi-zero) fits the same connector. |
+| Bluetooth speaker | Any; paired once (see below) and kept connected by `bt-speaker.sh`. |
+| USB power bank | Powers the Pi through its micro USB power port. The Info screen warns if the voltage drops too low. |
 
-## TOUCHSCREEN DRIVER — vendor specific
+## Software
 
-This was written against a generic "2.8\" capacitive IPS touchscreen" with no specific vendor/driver known, but you'll need its driver/overlay installed and working (vendor `apt` package, or a `git clone`d driver repo's install script, or a `dtoverlay=` line in `/boot/config.txt`) so the panel shows the desktop and the display's framebuffer is `/dev/fb0` or `/dev/fb1`. Once the desktop itself renders correctly on the panel (confirmed by seeing the normal Pi desktop there), the app just runs as an ordinary fullscreen X11 window — no raw framebuffer/evdev code needed on our side, X handles the touch input directly.
+The Pi runs **Raspberry Pi OS Lite** (no desktop): it boots to the console, logs in automatically and starts a bare X server with `xinit`. X runs just `openbox` and the jukebox, fullscreen. A full desktop is too much for the Pi Zero alongside Bluetooth audio.
 
-## CAMERA — TODO, module specific
+### Touchscreen driver
 
-The exact "spy cam" module/sensor is unknown too. The app shells out to whichever of `rpicam-still` / `libcamera-still` / `raspistill` is on `PATH` (covers current and older Raspberry Pi OS). If it's an official Pi Camera Module this should just work once enabled; a third-party sensor may need a `dtoverlay=` line in `/boot/config.txt` for that specific sensor first. Photos are saved to `photos/` in the repo, timestamped.
+Set up the screen with Waveshare's instructions for this panel (its `dtoverlay=` lines in `/boot/firmware/config.txt`) until the console shows on it, and rotate it to landscape. After that, X draws on it and handles touch itself; the app is an ordinary fullscreen X11 window with no screen-specific code.
+
+### Camera
+
+The app shells out to whichever of `rpicam-still` / `libcamera-still` / `raspistill` is on `PATH` (covers current and older Raspberry Pi OS). Photos are saved to `photos/` in the repo, timestamped. Camera settings (shutter speed, size, rotation) are in `jukebox/config.py`.
 
 ## Install on the Pi
 
 ```sh
+sudo apt-get install -y git xserver-xorg xinit openbox
 git clone <this repo> ~/xmas-jumper-2026
 cd ~/xmas-jumper-2026
 ./setup.sh
-sudo reboot
 ```
 
-`setup.sh` installs `python3-pygame`, `espeak-ng`, `alsa-utils`, a camera CLI tool (`rpicam-apps`/`libcamera-apps`), adds your user to the `video`/`audio` groups (camera/sound access), turns off the serial login console on the GPIO pins (noise there kept its login prompt busy and made the music break up; Bluetooth is unaffected), and writes `~/.config/autostart/jukebox.desktop` so the desktop session launches `run.sh` on login. It figures out the repo path itself (no hardcoded paths to edit).
+`setup.sh` installs `python3-pygame`, `espeak-ng`, `alsa-utils`, a camera CLI tool (`rpicam-apps`/`libcamera-apps`), adds your user to the `video`/`audio` groups (camera/sound access) and turns off the serial login console on the GPIO pins (noise there kept its login prompt busy and made the music break up; Bluetooth is unaffected). It also writes a desktop autostart entry, which isn't used when running under `xinit`.
 
-To launch it immediately without logging out/in: `./run.sh`. Press `Esc` to quit back to the desktop.
+### Start the jukebox on boot
+
+Link the repo's `xinitrc` as your X session:
+
+```sh
+ln -sf ~/xmas-jumper-2026/xinitrc ~/.xinitrc
+```
+
+Turn on console autologin (`sudo raspi-config nonint do_boot_behaviour B2`, or raspi-config > System Options > Boot / Auto Login > Console Autologin), then start X when that login happens on the screen by adding this to `~/.bash_profile`:
+
+```sh
+[ -z "$DISPLAY" ] && [ "$(tty)" = /dev/tty1 ] && exec startx
+```
+
+`sudo reboot` and the jukebox comes up on the touchscreen. `xinitrc` turns off screen blanking, starts `openbox` and `bt-speaker.sh`, and keeps the jukebox in a restart loop (xinit would otherwise shut X down as soon as the jukebox exits), so `Esc` or a crash restarts the app rather than leaving a blank screen. SSH logins aren't on tty1, so they get a normal shell.
+
+To pick up new code without a reboot: `./refresh.sh` (pulls, then stops the running jukebox so the `xinitrc` loop starts the new code; safe to run over SSH).
 
 ### Bluetooth speaker
 
@@ -43,17 +66,11 @@ wpctl status                                   # find the speaker's number under
 wpctl set-default <number>                     # remembered, and used again whenever it reconnects
 ```
 
-### Running under xinit (no desktop)
+The Info screen shows whether it's connected and, if the speaker reports it, its battery level.
 
-The Pi in use boots to a console and starts X with `xinit`, which runs `~/.xinitrc`. Link it to the repo's `xinitrc` once:
+### QR code
 
-```sh
-ln -sf ~/xmas-jumper-2026/xinitrc ~/.xinitrc
-```
-
-It keeps the jukebox in a restart loop (xinit would otherwise shut X down as soon as the jukebox exits), so `Esc` restarts the app rather than quitting it.
-
-To pick up new code without a reboot: `./refresh.sh` (pulls, then stops the running jukebox so the `xinitrc` loop starts the new code; safe to run over SSH).
+`qr-code.png` is shown on the Info screen to be scanned. Replace it with your own (keep it 148x148 with 4px squares, or change `QR_CODE_SIZE` in `jukebox/config.py`).
 
 ## Running / testing on a dev machine
 
@@ -71,10 +88,11 @@ This opens fullscreen on whatever display you're on — click with a mouse to si
 - `jukebox/games/` — Reindeer Snake, Present Catch, Bauble Pop, Memory Match, their shared base and the shape-drawn Christmas sprites; best scores saved in `~/.local/share/jukebox/scores.json`
 - `jukebox/audio.py` — music playback (shuffle, moves on when a song ends) + text-to-speech + volume
 - `jukebox/art.py` — album covers from the MP3s' tags, shrunk once and cached in `~/.cache/jukebox/art`
+- `jukebox/sysinfo.py` — reads the System Info screen's details (CPU, memory, disk, speaker, Wi-Fi, SSH, power)
 - `jukebox/camera.py` — shells out to the camera CLI tool, saves to `photos/`
 - `jukebox/jokes_loader.py`, `jukebox/music_loader.py` — parse `jokes.txt` / scan `music/`
 - `refresh.sh` — `git pull` and restart the running jukebox without a reboot
 - `bt-speaker.sh` — keeps the Bluetooth speaker in `~/.jukebox-speaker` connected (started by `xinitrc`)
 - `xinitrc` — X session for xinit: disables blanking, starts openbox, runs the jukebox in a restart loop
-- `run.sh` — launched by `xinitrc` (or the desktop autostart entry `setup.sh` creates); `cd`s to the repo and runs the app
+- `run.sh` — launched by `xinitrc`; `cd`s to the repo and runs the app
 
