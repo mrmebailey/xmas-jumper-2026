@@ -24,6 +24,7 @@ from .states.jokes import JokesState
 from .states.menu import MenuState
 from .states.music import MusicState
 from .states.songs import SongsState
+from .states.sysinfo import SysInfoState
 
 
 # Set JUKEBOX_PROFILE=1 to log input arrival and slow frames to stderr.
@@ -84,6 +85,7 @@ class App:
             "memory": MemoryState(self),
             "naughty": NaughtyState(self),
             "naughty_list": NaughtyListState(self),
+            "sysinfo": SysInfoState(self),
         }
         self.current_state = None
         self.change_state("menu")

@@ -36,6 +36,9 @@ class MenuState(State):
         self.off_button = Button((535, 405, 95, 60), "Off", self._off, app.font_small,
                                  touch_rect=(515, 395, config.SCREEN_W - 515, config.SCREEN_H - 395))
         self.buttons.append(self.off_button)
+        # The same, mirrored into the bottom-left corner.
+        self.buttons.append(Button((10, 405, 95, 60), "Info", lambda: go("sysinfo"), app.font_small,
+                                   touch_rect=(0, 395, 125, config.SCREEN_H - 395)))
         self.confirm_until = None
         self.status = None
 
@@ -99,4 +102,4 @@ class MenuState(State):
             pygame.draw.rect(surface, config.TITLE_COLOR, self.off_button.rect.inflate(8, 8), width=4,
                              border_radius=14)
         if self.status:
-            draw_text(surface, self.status, self.app.font_tiny, 270, 428, 520, (255, 120, 120))
+            draw_text(surface, self.status, self.app.font_tiny, 320, 428, 400, (255, 120, 120))

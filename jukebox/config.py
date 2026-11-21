@@ -117,3 +117,9 @@ SHUTDOWN_LOG = Path(tempfile.gettempdir()) / "jukebox-shutdown.log"  # why, if i
 DELETE_CONFIRM_MS = 3000  # how long the "Sure?" delete confirmation waits for a second tap  # how long a new photo is shown before returning to the camera screen
 # Degrees anticlockwise to turn the photo for display (add 180 if it comes out upside down).
 PHOTO_ROTATION = -90
+# System Info screen (the "Info" button, bottom left of the main menu).
+SPEAKER_FILE = Path.home() / ".jukebox-speaker"  # the speaker bt-speaker.sh keeps connected
+QR_CODE_FILE = REPO_ROOT / "qr-code.png"  # shown on the right to be scanned
+# The QR code is 148px with 4px squares, so 1.5x keeps every square a whole 6px.
+QR_CODE_SIZE = 222
+SYSINFO_REFRESH_MS = 3000
