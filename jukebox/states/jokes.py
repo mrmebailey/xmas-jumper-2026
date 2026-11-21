@@ -12,7 +12,7 @@ class JokesState(State):
     """Father Christmas reads the question, pauses, then delivers the punch
     line (louder and deeper), which pops up on screen as he says it. With the
     recordings from tools/make_santa_voice.py he also opens with a line of his
-    own over sleigh bells, laughs one of his belly laughs, and sometimes adds
+    own over sleigh bells, laughs "Ho ho ho! Merry Christmas!", and sometimes adds
     a word afterwards."""
 
     def on_enter(self):
@@ -44,7 +44,7 @@ class JokesState(State):
         if self.punch_line:
             parts.append((self.punch_line, config.PUNCH_LINE_VOICE, config.JOKE_PAUSE_MS,
                           rec(self.punch_line, "p")))
-            laugh = self._pick_recorded([f"laugh {i}" for i in range(config.SANTA_LAUGHS)], "laugh")
+            laugh = self._pick_recorded(config.SANTA_LAUGHS, "laugh")
             if laugh:
                 parts.append((config.JOKE_LAUGH or "Ho ho ho!", config.SANTA_VOICE, 400, laugh[1]))
             elif config.JOKE_LAUGH:

@@ -16,7 +16,7 @@ then made into Santa with audio effects: pitched down, slowed, warmed up and
 given a little room echo. Besides the jokes it records:
   - Santa's own lines before and after a joke (SANTA_INTROS / SANTA_OUTROS in
     jukebox/config.py), with sleigh bells under the opening line
-  - a few rolling belly laughs, each "Ho" deeper, longer and louder
+  - his laugh (SANTA_LAUGHS), said as one phrase so it flows naturally
   - a sparkly twinkle at the end of every punch line
 The bells and twinkle are made here from scratch, so there are no sound files
 to find or licence. Jokes without a recording fall back to espeak-ng on the Pi.
@@ -70,18 +70,10 @@ STYLES = {
     "outro": dict(length_scale=1.15, pitch=-2.5, gain_db=1, reverb=0.10),
 }
 
-# Belly laughs: each is a list of syllables said one at a time, every one a
-# little deeper, longer and louder than the last, with a breath between.
-LAUGHS = [
-    ["Ho!", "Ho!", "Ho!"],
-    ["Oh!", "Ho!", "Ho!", "Ho!"],
-    ["Ho!", "Ho!", "Ho!", "Ho!"],
-]
-LAUGH_START_PITCH = -3
-LAUGH_PITCH_STEP = -0.8  # semitones deeper per "Ho"
-LAUGH_START_LENGTH = 1.4
-LAUGH_LENGTH_STEP = 0.15
-LAUGH_GAIN_STEP_DB = 1.2
+# Santa's laugh is said as one whole phrase: Piper flows naturally through a
+# phrase, whereas "Ho"s recorded one at a time and joined sounded choppy.
+# A little more natural wobble (noise) than the jokes, so it's lively.
+LAUGH_STYLE = dict(length_scale=1.5, pitch=-2.5, gain_db=1, reverb=0.14, noise_scale=0.667, noise_w_scale=0.8)
 
 BELLS_LEVEL = 0.22  # sleigh bells under the opening line, relative to the voice
 TWINKLE_LEVEL = 0.18
@@ -130,10 +122,10 @@ def _trim(audio, rate, pad_ms=30):
     return audio[max(0, loud[0] - pad):loud[-1] + pad]
 
 
-def _speak(voice, text, length_scale, pitch):
+def _speak(voice, text, length_scale, pitch, noise_scale=0.5, noise_w_scale=0.6):
     """Piper's voice, pitched down; (audio, rate)."""
     # Lower noise scales give a steadier, smoother delivery.
-    syn = SynthesisConfig(length_scale=length_scale, noise_scale=0.5, noise_w_scale=0.6)
+    syn = SynthesisConfig(length_scale=length_scale, noise_scale=noise_scale, noise_w_scale=noise_w_scale)
     chunks = list(voice.synthesize(text, syn_config=syn))
     rate = chunks[0].sample_rate
     audio = np.concatenate([c.audio_float_array for c in chunks]).astype(np.float32)
@@ -163,17 +155,11 @@ def santa(voice, text, kind):
     return _santa_tone(audio, rate, style["reverb"], style["gain_db"])
 
 
-def belly_laugh(voice, syllables, seed):
-    rng = random.Random(seed)
-    pieces, rate = [], None
-    for i, syllable in enumerate(syllables):
-        audio, rate = _speak(voice, syllable, LAUGH_START_LENGTH + LAUGH_LENGTH_STEP * i,
-                             LAUGH_START_PITCH + LAUGH_PITCH_STEP * i)
-        audio = _trim(audio, rate) * 10 ** (LAUGH_GAIN_STEP_DB * i / 20)
-        if pieces:
-            pieces.append(np.zeros(int(rate * rng.uniform(0.07, 0.14)), np.float32))  # a breath
-        pieces.append(audio)
-    return _santa_tone(np.concatenate(pieces), rate, reverb=0.16, gain_db=2)
+def laugh(voice, text):
+    style = LAUGH_STYLE
+    audio, rate = _speak(voice, text, style["length_scale"], style["pitch"], style["noise_scale"],
+                         style["noise_w_scale"])
+    return _santa_tone(_trim(audio, rate), rate, style["reverb"], style["gain_db"])
 
 
 # --- Bells ------------------------------------------------------------------
@@ -268,9 +254,8 @@ def recordings():
         out.append((rec(text, "intro"), text, lambda v, t=text, i=i: with_bells(santa(v, t, "intro"), i)))
     for text in config.SANTA_OUTROS:
         out.append((rec(text, "outro"), text, lambda v, t=text: santa(v, t, "outro")))
-    for i, syllables in enumerate(LAUGHS[:config.SANTA_LAUGHS]):
-        out.append((rec(f"laugh {i}", "laugh"), " ".join(syllables),
-                    lambda v, s=syllables, i=i: belly_laugh(v, s, i)))
+    for text in config.SANTA_LAUGHS:
+        out.append((rec(text, "laugh"), text, lambda v, t=text: laugh(v, t)))
     return out
 
 
@@ -287,7 +272,7 @@ def record_samples(out_dir, count=3):
                       santa(voice, storyteller(question), "q")]
             if punch_line:
                 parts += [silence(config.JOKE_PAUSE_MS / 1000), with_twinkle(santa(voice, punch_line, "p"))]
-            parts += [silence(0.4), belly_laugh(voice, LAUGHS[n % len(LAUGHS)], n)]
+            parts += [silence(0.4), laugh(voice, config.SANTA_LAUGHS[n % len(config.SANTA_LAUGHS)])]
             if n % 2 == 0:
                 parts += [silence(0.3), santa(voice, config.SANTA_OUTROS[n], "outro")]
             parts.append(silence(1.5))
