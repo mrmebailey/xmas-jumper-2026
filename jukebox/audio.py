@@ -151,8 +151,10 @@ class AudioManager:
 
     def speak_parts(self, parts):
         """Say several bits one after another, each as (text, espeak options,
-        ms of silence before it), e.g. a joke's setup, then its punch line in a
-        bigger voice after a pause. part_started(i) says when bit i is heard.
+        ms of silence before it[, recording]), e.g. a joke's setup, then its
+        punch line in a bigger voice after a pause. part_started(i) says when
+        bit i is heard. A bit with a recording (a file that exists) plays
+        that instead of being spoken by espeak.
 
         espeak-ng renders each bit to a WAV first and pygame plays them joined
         into one sound: synthesising live on the Pi Zero's busy CPU made the
@@ -166,11 +168,26 @@ class AudioManager:
         self._rendered = []
         self._plain_retry = False
         self.part_starts = None
+        self._next_part()
+
+    def _next_part(self):
+        """Take recorded bits as they are, then render the next one with
+        espeak, or play the lot once every bit is ready."""
+        while len(self._rendered) < len(self._parts):
+            part = self._parts[len(self._rendered)]
+            recording = part[3] if len(part) > 3 else None
+            if recording is None or not recording.exists():
+                self._render_next()
+                return
+            self._rendered.append(recording)
         if self._parts:
-            self._render_next()
+            try:
+                self._join_and_play()
+            except pygame.error:
+                self._speech_channel = None
 
     def _render_next(self):
-        text, options, _ = self._parts[len(self._rendered)]
+        text, options = self._parts[len(self._rendered)][:2]
         if self._plain_retry and "-v" in options:
             # This espeak didn't know the voice: use its default one, still
             # with Santa's pitch, speed and loudness.
@@ -213,7 +230,8 @@ class AudioManager:
         frequency, size, channels = pygame.mixer.get_init()
         frame_bytes = abs(size) // 8 * channels
         chunks, starts, offset = [], [], 0
-        for (_, _, gap_ms), path in zip(self._parts, self._rendered):
+        for part, path in zip(self._parts, self._rendered):
+            gap_ms = part[2]
             gap = bytes(int(frequency * gap_ms / 1000) * frame_bytes)
             chunks.append(gap)
             offset += len(gap)
@@ -232,13 +250,7 @@ class AudioManager:
             self._speak_proc = None
             if ok:
                 self._rendered.append(self._rendering_to)
-                if len(self._rendered) < len(self._parts):
-                    self._render_next()
-                else:
-                    try:
-                        self._join_and_play()
-                    except pygame.error:
-                        self._speech_channel = None
+                self._next_part()
             elif not self._plain_retry:
                 self._plain_retry = True
                 self._render_next()

@@ -72,6 +72,32 @@ PUNCH_LINE_VOICE = ["-v", "en-gb+m3", "-p", "24", "-s", "125", "-a", "200"]
 JOKE_PAUSE_MS = 2500
 # Said after the punch line ("" for nothing).
 JOKE_LAUGH = "Ho ho ho!"
+# Jokes recorded in a natural Santa voice by tools/make_santa_voice.py (run on
+# a laptop; the Pi is too slow to do it). Jokes without a recording here are
+# spoken by espeak-ng instead, in the voices above.
+JOKE_AUDIO_DIR = REPO_ROOT / "jokes_audio"
+# Santa's own words around each recorded joke, picked at random (recorded
+# by the same script, which also mixes sleigh bells under the opening line).
+SANTA_INTROS = [
+    "Ho ho! Here's one for you.",
+    "Now then, listen closely.",
+    "One of my elves told me this one.",
+    "Gather round, here's a good one.",
+    "Mrs Claus loves this one.",
+    "Here's Rudolph's favourite joke!",
+    "Ho ho, are you sitting comfortably?",
+    "Right then, my dear. Here we go.",
+]
+SANTA_OUTROS = [
+    "Oh ho ho, that's a good one!",
+    "Merry Christmas!",
+    "Don't tell Mrs Claus I told you that one!",
+    "The elves never get that one!",
+    "Oh, I do love a cracker joke!",
+    "Ho ho! Have you been good this year?",
+]
+OUTRO_CHANCE = 0.5  # how often Santa adds one of those after his laugh
+SANTA_LAUGHS = 3  # different recorded belly laughs, picked at random
 SPEECH_WAV = Path(tempfile.gettempdir()) / "jukebox-joke.wav"  # speech is rendered to jukebox-joke-0.wav, -1, ... then played
 # When a speaker connects, wait this long (for PipeWire to finish setting it
 # up with its own saved volume) and then set it to the slider's volume.
