@@ -27,6 +27,7 @@ class AudioManager:
         self._rendering_to = None
         self._plain_retry = False
         self.part_starts = None  # when each bit of the current speech starts (ticks)
+        self.speech_ends_at = None  # when the current speech will finish (ticks)
         self._music_was_playing_before_speak = False
         # PipeWire's default output covers everything (music, spoken jokes, a
         # Bluetooth speaker); amixer only reaches a local ALSA card.
@@ -168,6 +169,7 @@ class AudioManager:
         self._rendered = []
         self._plain_retry = False
         self.part_starts = None
+        self.speech_ends_at = None
         self._next_part()
 
     def _next_part(self):
@@ -243,6 +245,7 @@ class AudioManager:
         self._speech_channel = self._speech_sound.play()
         now = pygame.time.get_ticks()
         self.part_starts = [now + start * 1000 // (frequency * frame_bytes) for start in starts]
+        self.speech_ends_at = now + offset * 1000 // (frequency * frame_bytes)
 
     def poll_speak(self):
         if self._speak_proc is not None and self._speak_proc.poll() is not None:

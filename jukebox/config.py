@@ -98,6 +98,10 @@ SANTA_OUTROS = [
 OUTRO_CHANCE = 0.5  # how often Santa adds one of those after his laugh
 # Santa's laugh after the punch line (one picked at random if there are more).
 SANTA_LAUGHS = ["Ho ho ho! Merry Christmas!"]
+# Shown one at a time while the Naughty or Nice scanner checks you, each read
+# out as it appears (recorded by the same script).
+NAUGHTY_SCAN_MESSAGES = ["Checking Santa's list...", "Counting good deeds...", "Asking the elves...",
+                         "Checking it twice..."]
 SPEECH_WAV = Path(tempfile.gettempdir()) / "jukebox-joke.wav"  # speech is rendered to jukebox-joke-0.wav, -1, ... then played
 # When a speaker connects, wait this long (for PipeWire to finish setting it
 # up with its own saved volume) and then set it to the slider's volume.

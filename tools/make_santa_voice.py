@@ -18,6 +18,8 @@ given a little room echo. Besides the jokes it records:
     jukebox/config.py), with sleigh bells under the opening line
   - his laugh (SANTA_LAUGHS), said as one phrase so it flows naturally
   - a sparkly twinkle at the end of every punch line
+  - the Naughty or Nice scanner's messages (NAUGHTY_SCAN_MESSAGES) and every
+    verdict it can give (jukebox/naughty_words.py)
 The bells and twinkle are made here from scratch, so there are no sound files
 to find or licence. Jokes without a recording fall back to espeak-ng on the Pi.
 
@@ -45,6 +47,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 from jukebox import config  # noqa: E402
 from jukebox.jokes_loader import parse_jokes, recorded_speech, split_joke  # noqa: E402
+from jukebox import naughty_words  # noqa: E402
 
 # A traditional Santa: an older, naturally deep and expressive American
 # voice, so it only needs a gentle push down (big pitch shifts sound rough).
@@ -68,6 +71,13 @@ STYLES = {
     "p": dict(length_scale=1.3, pitch=-3, gain_db=2, reverb=0.10),
     "intro": dict(length_scale=1.15, pitch=-2.5, gain_db=0, reverb=0.10),
     "outro": dict(length_scale=1.15, pitch=-2.5, gain_db=1, reverb=0.10),
+    "scan": dict(length_scale=1.1, pitch=-2.5, gain_db=0, reverb=0.10),  # Naughty or Nice scanner
+    # The Naughty or Nice verdict: which list announced slow and big,
+    # then the score and his comment in his chatty voice.
+    "vword": dict(length_scale=1.25, pitch=-3, gain_db=2, reverb=0.12),
+    "vpct": dict(length_scale=1.1, pitch=-2.5, gain_db=0, reverb=0.10),
+    "vline": dict(length_scale=1.15, pitch=-2.5, gain_db=1, reverb=0.10),
+    "vtop": dict(length_scale=1.2, pitch=-3, gain_db=2, reverb=0.10),
 }
 
 # Santa's laugh is said as one whole phrase: Piper flows naturally through a
@@ -254,6 +264,14 @@ def recordings():
         out.append((rec(text, "intro"), text, lambda v, t=text, i=i: with_bells(santa(v, t, "intro"), i)))
     for text in config.SANTA_OUTROS:
         out.append((rec(text, "outro"), text, lambda v, t=text: santa(v, t, "outro")))
+    for text in config.NAUGHTY_SCAN_MESSAGES:
+        out.append((rec(text, "scan"), text, lambda v, t=text: santa(v, t, "scan")))
+    verdict_lines = [(naughty_words.spoken_verdict(word), "vword") for word in naughty_words.VERDICT_LINES]
+    verdict_lines += [(text, "vpct") for text in naughty_words.all_naughtiness_lines()]
+    verdict_lines += [(line, "vline") for _, lines in naughty_words.VERDICT_LINES.values() for line in lines]
+    verdict_lines.append((naughty_words.TOP_OF_LIST, "vtop"))
+    for text, kind in verdict_lines:
+        out.append((rec(text, kind), text, lambda v, t=text, k=kind: santa(v, t, k)))
     for text in config.SANTA_LAUGHS:
         out.append((rec(text, "laugh"), text, lambda v, t=text: laugh(v, t)))
     return out

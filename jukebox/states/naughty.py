@@ -5,37 +5,21 @@ import pygame
 from .. import config
 from ..games import sprites
 from .. import naughty_list
+from ..jokes_loader import recorded_speech
 from ..naughty_theme import theme_photo
+from ..naughty_words import (NAUGHTINESS, TOP_OF_LIST, VERDICT_LINES, spoken_naughtiness,
+                             spoken_verdict)
 from ..photos import load_for_screen
 from ..widgets import Button, draw_text, render_text
 from .base import State
 
-SCAN_MS = 3000
+SCAN_MS = 3000  # how long the scan takes when its messages aren't recorded
+SCAN_GAP_MS = 350  # between the spoken scan messages
 PHOTO_BOX = (270, 330)
-SCAN_MESSAGES = ["Checking Santa's list...", "Counting good deeds...", "Asking the elves...", "Checking it twice..."]
+SCAN_MESSAGES = config.NAUGHTY_SCAN_MESSAGES
+VERDICT_COLORS = {"NICE!": (90, 220, 120), "VERY NICE!": sprites.GOLD, "NAUGHTY!": (255, 90, 90)}
 # (verdict, colour, weight, things to say)
-VERDICTS = [
-    ("NICE!", (90, 220, 120), 45, [
-        "Santa's sleigh will definitely be stopping at yours.",
-        "The elves give you a big thumbs up!",
-        "Mince pies all round!",
-        "Keep it up and there might be an extra present.",
-    ]),
-    ("VERY NICE!", sprites.GOLD, 25, [
-        "Top of Santa's list this year!",
-        "Rudolph wants your autograph!",
-        "The elves are building something special for you.",
-    ]),
-    ("NAUGHTY!", (255, 90, 90), 30, [
-        "Uh oh... it's looking like a lump of coal.",
-        "The elves saw what you did...",
-        "Better be extra good from now until Christmas!",
-        "Santa is going to have a word with you.",
-    ]),
-]
-
-# How naughty each verdict can be, as a percentage on the Naughty-o-meter.
-NAUGHTINESS = {"VERY NICE!": (1, 19), "NICE!": (20, 59), "NAUGHTY!": (60, 100)}
+VERDICTS = [(word, VERDICT_COLORS[word], weight, lines) for word, (weight, lines) in VERDICT_LINES.items()]
 
 
 class NaughtyState(State):
@@ -67,7 +51,16 @@ class NaughtyState(State):
 
     def _scan(self):
         self.phase = "scanning"
-        self.scan_until = pygame.time.get_ticks() + SCAN_MS
+        self.scan_started = pygame.time.get_ticks()
+        self.scan_until = self.scan_started + SCAN_MS
+        # Santa reads each message out as it comes up, if they've been
+        # recorded (tools/make_santa_voice.py); the scan then lasts as long
+        # as he takes. espeak isn't used here: it would lag behind the screen.
+        recordings = [recorded_speech(config.JOKE_AUDIO_DIR, text, "scan") for text in SCAN_MESSAGES]
+        self.spoken = all(path.exists() for path in recordings)
+        if self.spoken:
+            self.app.audio.speak_parts([(text, config.SANTA_VOICE, SCAN_GAP_MS if i else 0, path)
+                                        for i, (text, path) in enumerate(zip(SCAN_MESSAGES, recordings))])
 
     def _buttons(self):
         if self.phase == "scanning":
@@ -87,8 +80,29 @@ class NaughtyState(State):
             # Start the camera as soon as the screen opens; it takes longer to
             # start than the scan does.
             self.app.camera.keep_warm()
-        if self.phase == "scanning" and pygame.time.get_ticks() >= self.scan_until:
+        if self.phase == "scanning" and self._scan_done():
             self._take_photo()
+
+    def _scan_done(self):
+        now = pygame.time.get_ticks()
+        if self.spoken:
+            # Until Santa has finished (and at least the usual scan time, in
+            # case the sound fails), with a safety limit in case it never ends.
+            finished = not self.app.audio.speaking and now >= self.scan_until
+            return finished or now >= self.scan_started + 20000
+        return now >= self.scan_until
+
+    def _scan_progress(self):
+        """(how far through the scan 0-1, which message to show)."""
+        now = pygame.time.get_ticks()
+        audio = self.app.audio
+        if self.spoken and audio.part_starts and audio.speech_ends_at:
+            start, end = audio.part_starts[0], audio.speech_ends_at
+            done = (now - start) / max(1, end - start)
+            shown = sum(1 for i in range(len(SCAN_MESSAGES)) if audio.part_started(i))
+            return max(0.0, min(1.0, done)), max(0, shown - 1)
+        done = 1 - max(0, self.scan_until - now) / SCAN_MS
+        return done, min(len(SCAN_MESSAGES) - 1, int(done * len(SCAN_MESSAGES)))
 
     def _take_photo(self):
         # Taking the photo holds up the screen briefly, so say so first.
@@ -98,7 +112,7 @@ class NaughtyState(State):
         word, color, _, lines = random.choices(VERDICTS, weights=[v[2] for v in VERDICTS])[0]
         self.verdict = (word, color, random.choice(lines))
         self.naughtiness = random.randint(*NAUGHTINESS[word])
-        speech = f"{word.rstrip('!').lower()}. {self.naughtiness} percent naughty. {self.verdict[2]}"
+        top = False
         if error:
             self.error = error
         else:
@@ -108,10 +122,23 @@ class NaughtyState(State):
             if word == "NAUGHTY!":
                 naughty_list.add(path, self.naughtiness)
                 self.rank = naughty_list.rank_of(path)
-                if self.rank == 1:
-                    speech += " You are top of the naughty list!"
+                top = self.rank == 1
         self.phase = "result"
-        self.app.audio.speak(speech)
+        self._say_verdict(word, self.naughtiness, self.verdict[2], top)
+
+    def _say_verdict(self, word, naughtiness, line, top):
+        """Santa reads the verdict, in his recorded voice if every bit of it
+        has been recorded (tools/make_santa_voice.py), otherwise by espeak."""
+        bits = [(spoken_verdict(word), "vword", 0), (spoken_naughtiness(naughtiness), "vpct", 250),
+                (line, "vline", 350)]
+        if top:
+            bits.append((TOP_OF_LIST, "vtop", 350))
+        parts = [(text, config.SANTA_VOICE, gap, recorded_speech(config.JOKE_AUDIO_DIR, text, kind))
+                 for text, kind, gap in bits]
+        if all(part[3].exists() for part in parts):
+            self.app.audio.speak_parts(parts)
+        else:
+            self.app.audio.speak(" ".join(text for text, _, _ in bits))
 
     def draw(self, surface, checking=False):
         if self.phase == "result":
@@ -132,8 +159,7 @@ class NaughtyState(State):
     def _draw_scanning(self, surface, checking):
         self.draw_background(surface, "Scanning...")
         now = pygame.time.get_ticks()
-        left = max(0, self.scan_until - now)
-        done = 1 - left / SCAN_MS
+        done, shown = self._scan_progress()
         frame = pygame.Rect(170, 80, 300, 230)
         pygame.draw.rect(surface, (90, 220, 120), frame, width=3, border_radius=10)
         # A scan line sweeping up and down the frame.
@@ -141,8 +167,7 @@ class NaughtyState(State):
         sweep = sweep * 2 if sweep < 0.5 else 2 - sweep * 2
         y = frame.y + 6 + int((frame.height - 12) * sweep)
         pygame.draw.line(surface, (90, 220, 120), (frame.x + 6, y), (frame.right - 6, y), 4)
-        message = "Checking it twice..." if checking else SCAN_MESSAGES[min(len(SCAN_MESSAGES) - 1,
-                                                                            int(done * len(SCAN_MESSAGES)))]
+        message = SCAN_MESSAGES[-1] if checking else SCAN_MESSAGES[shown]
         text = render_text(self.app.font_medium, message, config.TITLE_COLOR)
         surface.blit(text, text.get_rect(center=(config.SCREEN_W // 2, 345)))
         bar = pygame.Rect(120, 390, 400, 26)
