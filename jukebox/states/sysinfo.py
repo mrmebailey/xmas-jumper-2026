@@ -69,6 +69,16 @@ class SysInfoState(State):
             y = ROW_TOP + i * ROW_H
             surface.blit(render_text(font, label, config.TITLE_COLOR), (LEFT, y))
             surface.blit(fit_text(font, value, value_w), (VALUE_X, y))
+        if config.FRONTIER_FINDINGS:
+            # Its own highlighted line under the details, boxed in red.
+            y = ROW_TOP + len(self.rows) * ROW_H + 8
+            label = render_text(font, "Frontier Findings", config.TITLE_COLOR)
+            value_x = LEFT + label.get_width() + 14
+            value = fit_text(font, config.FRONTIER_FINDINGS, QR_X - 26 - value_x, config.WARNING_COLOR)
+            box = pygame.Rect(LEFT - 8, y - 6, value_x + value.get_width() + 8 - (LEFT - 8), font.get_linesize() + 10)
+            pygame.draw.rect(surface, config.WARNING_COLOR, box, width=2, border_radius=6)
+            surface.blit(label, (LEFT, y))
+            surface.blit(value, (value_x, y))
         if self._qr is not None:
             pygame.draw.rect(surface, (255, 255, 255), (QR_X - 6, QR_Y - 6, config.QR_CODE_SIZE + 12,
                                                         config.QR_CODE_SIZE + 12), border_radius=6)

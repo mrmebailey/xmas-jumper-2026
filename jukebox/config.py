@@ -123,3 +123,6 @@ QR_CODE_FILE = REPO_ROOT / "qr-code.png"  # shown on the right to be scanned
 # The QR code is 148px with 4px squares, so 1.5x keeps every square a whole 6px.
 QR_CODE_SIZE = 222
 SYSINFO_REFRESH_MS = 3000
+# Shown at the bottom of the System Info screen, highlighted in red.
+FRONTIER_FINDINGS = "138 old libraries"
+WARNING_COLOR = (255, 80, 80)
